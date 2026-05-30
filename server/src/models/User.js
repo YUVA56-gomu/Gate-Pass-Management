@@ -21,12 +21,20 @@ const User = sequelize.define('User', {
     allowNull: false
   },
   role: {
-    type: DataTypes.ENUM('student', 'coordinator', 'hostel_staff', 'security', 'admin'),
+    type: DataTypes.ENUM('STUDENT', 'COORDINATOR', 'HOSTEL_STAFF', 'SECURITY', 'ADMIN'),
     allowNull: false,
-    defaultValue: 'student'
+    defaultValue: 'STUDENT'
   },
   phone: {
     type: DataTypes.STRING
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  last_login: {
+    type: DataTypes.DATE,
+    allowNull: true
   },
   createdAt: {
     type: DataTypes.DATE,

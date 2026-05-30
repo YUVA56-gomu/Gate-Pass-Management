@@ -9,22 +9,33 @@ const Approval = sequelize.define('Approval', {
   },
   pass_id: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
+    references: {
+      model: 'passes',
+      key: 'id'
+    }
   },
   approved_by: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   },
   stage: {
-    type: DataTypes.ENUM('coordinator', 'hostel_staff'),
+    type: DataTypes.ENUM('COORDINATOR', 'HOSTEL_STAFF'),
     allowNull: false
   },
   status: {
-    type: DataTypes.ENUM('pending', 'approved', 'rejected'),
-    defaultValue: 'pending'
+    type: DataTypes.ENUM('PENDING', 'APPROVED', 'REJECTED'),
+    defaultValue: 'PENDING'
   },
   remarks: {
     type: DataTypes.TEXT
+  },
+  approved_at: {
+    type: DataTypes.DATE,
+    allowNull: true
   },
   createdAt: {
     type: DataTypes.DATE,

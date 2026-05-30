@@ -4,8 +4,12 @@ import dotenv from 'dotenv'
 import sequelize from './config/db.js'
 import { errorHandler } from './middleware/error.middleware.js'
 
+// Import models to establish associations
+import './models/index.js'
+
 // Routes
 import authRoutes from './routes/auth.routes.js'
+import studentRoutes from './routes/student.routes.js'
 import passRoutes from './routes/pass.routes.js'
 import approvalRoutes from './routes/approval.routes.js'
 import securityRoutes from './routes/security.routes.js'
@@ -24,6 +28,7 @@ app.use(express.urlencoded({ extended: true }))
 
 // Routes
 app.use('/auth', authRoutes)
+app.use('/student', studentRoutes)
 app.use('/passes', passRoutes)
 app.use('/approvals', approvalRoutes)
 app.use('/security', securityRoutes)

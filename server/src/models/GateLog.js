@@ -9,11 +9,26 @@ const GateLog = sequelize.define('GateLog', {
   },
   pass_id: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
+    references: {
+      model: 'passes',
+      key: 'id'
+    }
   },
   action: {
     type: DataTypes.ENUM('IN', 'OUT'),
     allowNull: false
+  },
+  scan_status: {
+    type: DataTypes.ENUM('VALID', 'INVALID', 'EXPIRED'),
+    defaultValue: 'VALID'
+  },
+  scanned_by: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   },
   scanned_at: {
     type: DataTypes.DATE,

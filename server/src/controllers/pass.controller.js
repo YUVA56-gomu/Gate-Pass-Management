@@ -1,63 +1,82 @@
 import { passService } from '../services/pass.service.js'
 import { passRepository } from '../repositories/pass.repository.js'
-import { successResponse, errorResponse } from '../utils/response.js'
-import fs from 'fs'
+import * as studentService from '../services/student.service.js'
+import { sendSuccess, sendError } from '../utils/response.js'
+
+export const createPass = async (req, res) => {
+  try {
+    const userId = req.user.id
+    const { type, reason, destination, from_date, to_date, parent_contact } = req.body
+
+    // Check if student profile is complete
+    const isComplete = await studentService.isProfileComplete(userId)
+    if (!isComplete) {
+      return sendError(res, 'Student profile must be completed before creating a pass', 400)
+    }
+
+    // Get student ID from user ID
+    const student = await studentService.getStudentByUserId(userId)
+    if (!student) {
+      return sendError(res, 'Student profile not found', 404)
+    }
+
+    // Create pass
+    const pass = await passService.createPass({
+      student_id: student.id,
+      type,
+      reason,
+      destination,
+      from_date,
+      to_date,
+      parent_contact
+    })
+
+    return sendSuccess(res, pass, 'Pass created successfully', 201)
+  } catch (error) {
+    return sendError(res, error.message, 400)
+  }
+}
+
+export const getMyPasses = async (req, res) => {
+  try {
+    const userId = req.user.id
+
+    // Get student ID from user ID
+    const student = await studentService.getStudentByUserId(userId)
+    if (!student) {
+      return sendError(res, 'Student profile not found', 404)
+    }
+
+    const passes = await passService.getStudentPasses(student.id)
+    return sendSuccess(res, passes, 'Passes retrieved successfully', 200)
+  } catch (error) {
+    return sendError(res, error.message, 400)
+  }
+}
+
+export const getPassById = async (req, res) => {
+  try {
+    const pass = await passService.getPassById(req.params.id)
+    if (!pass) {
+      return sendError(res, 'Pass not found', 404)
+    }
+
+    // Check if user owns this pass
+    const userId = req.user.id
+    const student = await studentService.getStudentByUserId(userId)
+
+    if (pass.student_id !== student.id && req.user.role !== 'ADMIN') {
+      return sendError(res, 'Unauthorized', 403)
+    }
+
+    return sendSuccess(res, pass, 'Pass retrieved successfully', 200)
+  } catch (error) {
+    return sendError(res, error.message, 400)
+  }
+}
 
 export const passController = {
-  createPass: async (req, res) => {
-    try {
-      const pass = await passService.createPass({
-        ...req.body,
-        student_id: req.user.id
-      })
-      successResponse(res, pass, 'Pass created successfully', 201)
-    } catch (error) {
-      errorResponse(res, error.message, 400)
-    }
-  },
-
-  getMyPasses: async (req, res) => {
-    try {
-      const passes = await passService.getStudentPasses(req.user.id)
-      successResponse(res, passes, 'Passes retrieved')
-    } catch (error) {
-      errorResponse(res, error.message, 400)
-    }
-  },
-
-  getPassById: async (req, res) => {
-    try {
-      const pass = await passService.getPassById(req.params.id)
-      if (!pass) {
-        return errorResponse(res, 'Pass not found', 404)
-      }
-      successResponse(res, pass, 'Pass retrieved')
-    } catch (error) {
-      errorResponse(res, error.message, 400)
-    }
-  },
-
-  downloadPDF: async (req, res) => {
-    try {
-      const pass = await passRepository.findById(req.params.id)
-      if (!pass || !pass.pdf_path) {
-        return errorResponse(res, 'PDF not found', 404)
-      }
-      res.download(pass.pdf_path)
-    } catch (error) {
-      errorResponse(res, error.message, 400)
-    }
-  },
-
-  getQRCode: async (req, res) => {
-    try {
-      const pass = await passRepository.findById(req.params.id)
-      if (!pass || !pass.qr_code) {
-        return errorResponse(res, 'QR code not found', 404)
-      }
-      res.sendFile(pass.qr_code)
-    } catch (error) {
-      errorResponse(res, error.message, 400)
-    }
-  }
+  createPass,
+  getMyPasses,
+  getPassById
 }

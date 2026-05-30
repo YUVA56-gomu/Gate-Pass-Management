@@ -9,6 +9,17 @@ const Notification = sequelize.define('Notification', {
   },
   user_id: {
     type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
+  type: {
+    type: DataTypes.ENUM(
+      'pass_applied', 'pass_approved', 'pass_rejected', 'pass_cancelled',
+      'approval_pending', 'approval_completed', 'gate_scan', 'system_alert'
+    ),
     allowNull: false
   },
   title: {
@@ -19,9 +30,20 @@ const Notification = sequelize.define('Notification', {
     type: DataTypes.TEXT,
     allowNull: false
   },
+  related_pass_id: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: 'passes',
+      key: 'id'
+    }
+  },
   is_read: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+  read_at: {
+    type: DataTypes.DATE,
+    allowNull: true
   },
   createdAt: {
     type: DataTypes.DATE,
