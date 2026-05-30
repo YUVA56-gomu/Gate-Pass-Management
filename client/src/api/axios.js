@@ -1,29 +1,45 @@
 import axios from 'axios'
 
-const API = axios.create({
-  baseURL: '/api',
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+
+// Create axios instance
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json'
   }
 })
 
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+// Add request interceptor to attach JWT token
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
   }
-  return config
-})
+)
 
-API.interceptors.response.use(
-  (response) => response,
+// Add response interceptor to handle 401 errors
+axiosInstance.interceptors.response.use(
+  (response) => {
+    return response
+  },
   (error) => {
     if (error.response?.status === 401) {
+      // Clear authentication data
       localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      
+      // Redirect to login
       window.location.href = '/login'
     }
     return Promise.reject(error)
   }
 )
 
-export default API
+export default axiosInstance
