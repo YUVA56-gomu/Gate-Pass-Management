@@ -1,47 +1,246 @@
-import { approvalRepository } from '../repositories/approval.repository.js'
-import { passRepository } from '../repositories/pass.repository.js'
+import sequelize from '../config/db.js'
+import { Pass, Approval, Student, User, Department } from '../models/index.js'
 
-export const approvalService = {
-  getPendingApprovals: async (stage) => {
-    return approvalRepository.findAll()
-  },
-
-  approveRequest: async (approvalId, remarks) => {
-    const approval = await approvalRepository.findById(approvalId)
-    if (!approval) {
-      throw new Error('Approval not found')
-    }
-
-    await approvalRepository.update(approvalId, {
-      status: 'approved',
-      remarks
+/**
+ * Get pending long leave requests for coordinator
+ */
+export const getPendingLongLeaveRequests = async () => {
+  try {
+    const passes = await Pass.findAll({
+      where: {
+        type: 'LONG_LEAVE',
+        status: 'PENDING_COORDINATOR'
+      },
+      include: [
+        {
+          model: Student,
+          attributes: ['id', 'usn'],
+          include: [
+            {
+              model: User,
+              attributes: ['id', 'name', 'email']
+            },
+            {
+              model: Department,
+              attributes: ['id', 'name', 'code']
+            }
+          ]
+        }
+      ],
+      order: [['createdAt', 'DESC']]
     })
 
-    // Check if all approvals are done
-    const pass = await passRepository.findById(approval.pass_id)
-    const allApprovals = await approvalRepository.findByPassId(pass.id)
-    
-    if (allApprovals.every(a => a.status !== 'pending')) {
-      await passRepository.update(pass.id, { status: 'approved' })
-    }
-
-    return approval
-  },
-
-  rejectRequest: async (approvalId, remarks) => {
-    const approval = await approvalRepository.findById(approvalId)
-    if (!approval) {
-      throw new Error('Approval not found')
-    }
-
-    await approvalRepository.update(approvalId, {
-      status: 'rejected',
-      remarks
-    })
-
-    // Reject the pass
-    await passRepository.update(approval.pass_id, { status: 'rejected' })
-
-    return approval
+    return passes
+  } catch (error) {
+    throw new Error(`Failed to get pending requests: ${error.message}`)
   }
+}
+
+/**
+ * Approve long leave request with transaction
+ */
+export const approveLongLeaveRequest = async (passId, coordinatorId, remarks = null) => {
+  const transaction = await sequelize.transaction()
+
+  try {
+    // Fetch latest pass state with lock
+    const pass = await Pass.findByPk(passId, { transaction })
+
+    // Validation: Pass exists
+    if (!pass) {
+      await transaction.rollback()
+      throw new Error('Pass not found')
+    }
+
+    // Validation: Pass type is LONG_LEAVE
+    if (pass.type !== 'LONG_LEAVE') {
+      await transaction.rollback()
+      throw new Error('Only LONG_LEAVE passes can be approved by coordinator')
+    }
+
+    // Validation: Pass status is PENDING_COORDINATOR
+    if (pass.status !== 'PENDING_COORDINATOR') {
+      await transaction.rollback()
+      throw new Error('This request has already been processed')
+    }
+
+    // Update pass status to PENDING_HOSTEL
+    await pass.update(
+      {
+        status: 'PENDING_HOSTEL'
+      },
+      { transaction }
+    )
+
+    // Create approval record
+    const approval = await Approval.create(
+      {
+        pass_id: passId,
+        approved_by: coordinatorId,
+        stage: 'COORDINATOR',
+        status: 'APPROVED',
+        remarks: remarks,
+        approved_at: new Date()
+      },
+      { transaction }
+    )
+
+    // Commit transaction
+    await transaction.commit()
+
+    return approval
+  } catch (error) {
+    // Rollback on any error
+    await transaction.rollback()
+    throw new Error(`Failed to approve request: ${error.message}`)
+  }
+}
+
+/**
+ * Reject long leave request with transaction
+ */
+export const rejectLongLeaveRequest = async (passId, coordinatorId, remarks) => {
+  const transaction = await sequelize.transaction()
+
+  try {
+    // Validation: Remarks are mandatory
+    if (!remarks || !remarks.trim()) {
+      await transaction.rollback()
+      throw new Error('Remarks are mandatory for rejection')
+    }
+
+    // Fetch latest pass state with lock
+    const pass = await Pass.findByPk(passId, { transaction })
+
+    // Validation: Pass exists
+    if (!pass) {
+      await transaction.rollback()
+      throw new Error('Pass not found')
+    }
+
+    // Validation: Pass type is LONG_LEAVE
+    if (pass.type !== 'LONG_LEAVE') {
+      await transaction.rollback()
+      throw new Error('Only LONG_LEAVE passes can be rejected by coordinator')
+    }
+
+    // Validation: Pass status is PENDING_COORDINATOR
+    if (pass.status !== 'PENDING_COORDINATOR') {
+      await transaction.rollback()
+      throw new Error('This request has already been processed')
+    }
+
+    // Update pass status to REJECTED
+    await pass.update(
+      {
+        status: 'REJECTED'
+      },
+      { transaction }
+    )
+
+    // Create approval record
+    const approval = await Approval.create(
+      {
+        pass_id: passId,
+        approved_by: coordinatorId,
+        stage: 'COORDINATOR',
+        status: 'REJECTED',
+        remarks: remarks,
+        approved_at: new Date()
+      },
+      { transaction }
+    )
+
+    // Commit transaction
+    await transaction.commit()
+
+    return approval
+  } catch (error) {
+    // Rollback on any error
+    await transaction.rollback()
+    throw new Error(`Failed to reject request: ${error.message}`)
+  }
+}
+
+/**
+ * Get approval history for coordinator
+ */
+export const getCoordinatorApprovalHistory = async (coordinatorId) => {
+  try {
+    const approvals = await Approval.findAll({
+      where: {
+        approved_by: coordinatorId,
+        stage: 'COORDINATOR'
+      },
+      include: [
+        {
+          model: Pass,
+          attributes: ['id', 'type', 'reason', 'destination', 'from_date', 'to_date', 'status'],
+          include: [
+            {
+              model: Student,
+              attributes: ['id', 'usn'],
+              include: [
+                {
+                  model: User,
+                  attributes: ['id', 'name', 'email']
+                },
+                {
+                  model: Department,
+                  attributes: ['id', 'name', 'code']
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      order: [['approved_at', 'DESC']]
+    })
+
+    return approvals
+  } catch (error) {
+    throw new Error(`Failed to get approval history: ${error.message}`)
+  }
+}
+
+/**
+ * Get approval by ID
+ */
+export const getApprovalById = async (approvalId) => {
+  try {
+    const approval = await Approval.findByPk(approvalId, {
+      include: [
+        {
+          model: Pass,
+          include: [
+            {
+              model: Student,
+              include: [
+                {
+                  model: User,
+                  attributes: ['id', 'name', 'email']
+                },
+                {
+                  model: Department,
+                  attributes: ['id', 'name', 'code']
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    })
+
+    return approval
+  } catch (error) {
+    throw new Error(`Failed to get approval: ${error.message}`)
+  }
+}
+
+export default {
+  getPendingLongLeaveRequests,
+  approveLongLeaveRequest,
+  rejectLongLeaveRequest,
+  getCoordinatorApprovalHistory,
+  getApprovalById
 }

@@ -12,9 +12,14 @@ import authRoutes from './routes/auth.routes.js'
 import studentRoutes from './routes/student.routes.js'
 import passRoutes from './routes/pass.routes.js'
 import approvalRoutes from './routes/approval.routes.js'
+import hostelRoutes from './routes/hostel.routes.js'
+import qrRoutes from './routes/qr.routes.js'
+import pdfRoutes from './routes/pdf.routes.js'
 import securityRoutes from './routes/security.routes.js'
 import userRoutes from './routes/user.routes.js'
+import adminRoutes from './routes/admin.routes.js'
 import reportRoutes from './routes/report.routes.js'
+import notificationRoutes from './routes/notification.routes.js'
 
 dotenv.config()
 
@@ -31,9 +36,14 @@ app.use('/auth', authRoutes)
 app.use('/student', studentRoutes)
 app.use('/passes', passRoutes)
 app.use('/approvals', approvalRoutes)
+app.use('/hostel', hostelRoutes)
+app.use('/qr', qrRoutes)
+app.use('/pdf', pdfRoutes)
 app.use('/security', securityRoutes)
 app.use('/users', userRoutes)
+app.use('/admin', adminRoutes)
 app.use('/reports', reportRoutes)
+app.use('/notifications', notificationRoutes)
 
 // Error handling
 app.use(errorHandler)

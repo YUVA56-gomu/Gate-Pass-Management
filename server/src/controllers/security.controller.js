@@ -1,56 +1,82 @@
-import { passRepository } from '../repositories/pass.repository.js'
-import { gateLogRepository } from '../repositories/gateLog.repository.js'
-import { successResponse, errorResponse } from '../utils/response.js'
+import { sendSuccess, sendError } from '../utils/response.js'
+import * as securityService from '../services/security.service.js'
 
-export const securityController = {
-  scanQR: async (req, res) => {
-    try {
-      const { qrCode } = req.body
-      const passData = JSON.parse(qrCode)
-      const pass = await passRepository.findById(passData.id)
-      
-      if (!pass) {
-        return errorResponse(res, 'Pass not found', 404)
-      }
+/**
+ * Scan QR Token
+ * POST /security/scan
+ */
+export const scanQR = async (req, res) => {
+  try {
+    const { token } = req.body
+    const securityUserId = req.user.id
 
-      successResponse(res, pass, 'QR scanned successfully')
-    } catch (error) {
-      errorResponse(res, 'Invalid QR code', 400)
+    // Validation: Token provided
+    if (!token) {
+      return sendError(res, 'Token is required', 400)
     }
-  },
 
-  markIN: async (req, res) => {
-    try {
-      const { passId } = req.params
-      await gateLogRepository.create({
-        pass_id: passId,
-        action: 'IN'
-      })
-      successResponse(res, null, 'Marked IN successfully')
-    } catch (error) {
-      errorResponse(res, error.message, 400)
-    }
-  },
+    // Call service
+    const result = await securityService.scanQRToken(token, securityUserId)
 
-  markOUT: async (req, res) => {
-    try {
-      const { passId } = req.params
-      await gateLogRepository.create({
-        pass_id: passId,
-        action: 'OUT'
-      })
-      successResponse(res, null, 'Marked OUT successfully')
-    } catch (error) {
-      errorResponse(res, error.message, 400)
-    }
-  },
-
-  getScanLogs: async (req, res) => {
-    try {
-      const logs = await gateLogRepository.findAll()
-      successResponse(res, logs, 'Scan logs retrieved')
-    } catch (error) {
-      errorResponse(res, error.message, 400)
-    }
+    return sendSuccess(res, result, 'QR scanned successfully', 200)
+  } catch (error) {
+    return sendError(res, error.message, 400)
   }
+}
+
+/**
+ * Get Today's Logs
+ * GET /security/logs/today
+ */
+export const getTodayLogs = async (req, res) => {
+  try {
+    const logs = await securityService.getTodayLogs()
+
+    return sendSuccess(res, logs, 'Today\'s logs retrieved successfully', 200)
+  } catch (error) {
+    return sendError(res, error.message, 400)
+  }
+}
+
+/**
+ * Get All Logs with Filters
+ * GET /security/logs?filter=ALL|OUT|IN|TODAY
+ */
+export const getAllLogs = async (req, res) => {
+  try {
+    const { filter = 'ALL' } = req.query
+
+    // Validation: Valid filter
+    const validFilters = ['ALL', 'OUT', 'IN', 'TODAY']
+    if (!validFilters.includes(filter)) {
+      return sendError(res, 'Invalid filter. Use: ALL, OUT, IN, or TODAY', 400)
+    }
+
+    const logs = await securityService.getAllLogs(filter)
+
+    return sendSuccess(res, logs, 'Logs retrieved successfully', 200)
+  } catch (error) {
+    return sendError(res, error.message, 400)
+  }
+}
+
+/**
+ * Get Dashboard Statistics
+ * GET /security/dashboard
+ */
+export const getDashboard = async (req, res) => {
+  try {
+    const stats = await securityService.getDashboardStats()
+
+    return sendSuccess(res, stats, 'Dashboard statistics retrieved successfully', 200)
+  } catch (error) {
+    return sendError(res, error.message, 400)
+  }
+}
+
+export default {
+  scanQR,
+  getTodayLogs,
+  getAllLogs,
+  getDashboard
 }

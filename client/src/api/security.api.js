@@ -1,8 +1,62 @@
-import API from './axios'
+import axios from './axios'
 
-export const securityAPI = {
-  scanQR: (qrCode) => API.post('/security/scan', { qrCode }),
-  markIN: (passId) => API.post(`/security/mark-in/${passId}`),
-  markOUT: (passId) => API.post(`/security/mark-out/${passId}`),
-  getScanLogs: () => API.get('/security/logs')
+/**
+ * Scan QR Token
+ * POST /security/scan
+ */
+export const scanQRToken = async (token) => {
+  try {
+    const response = await axios.post('/security/scan', { token })
+    return response.data
+  } catch (error) {
+    throw error.response?.data || { success: false, message: 'Failed to scan QR token' }
+  }
+}
+
+/**
+ * Get Today's Logs
+ * GET /security/logs/today
+ */
+export const getTodayLogs = async () => {
+  try {
+    const response = await axios.get('/security/logs/today')
+    return response.data
+  } catch (error) {
+    throw error.response?.data || { success: false, message: 'Failed to get today\'s logs' }
+  }
+}
+
+/**
+ * Get All Logs with Filters
+ * GET /security/logs?filter=ALL|OUT|IN|TODAY
+ */
+export const getAllLogs = async (filter = 'ALL') => {
+  try {
+    const response = await axios.get('/security/logs', {
+      params: { filter }
+    })
+    return response.data
+  } catch (error) {
+    throw error.response?.data || { success: false, message: 'Failed to get logs' }
+  }
+}
+
+/**
+ * Get Dashboard Statistics
+ * GET /security/dashboard
+ */
+export const getDashboardStats = async () => {
+  try {
+    const response = await axios.get('/security/dashboard')
+    return response.data
+  } catch (error) {
+    throw error.response?.data || { success: false, message: 'Failed to get dashboard statistics' }
+  }
+}
+
+export default {
+  scanQRToken,
+  getTodayLogs,
+  getAllLogs,
+  getDashboardStats
 }
