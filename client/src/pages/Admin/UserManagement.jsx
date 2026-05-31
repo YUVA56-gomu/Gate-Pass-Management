@@ -16,10 +16,10 @@ function UserManagement() {
     fetchUsers()
   }, [])
 
-  const fetchUsers = async () => {
-    try {
-      const response = await userAPI.getAllUsers()
-      setUsers(response.data)
+ const fetchUsers = async () => {
+  try {
+    const response = await userAPI.getAllUsers()
+    setUsers(response.data.data)
     } catch (error) {
       addNotification('Failed to fetch users', 'error')
     } finally {
@@ -130,7 +130,7 @@ function UserManagement() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
+                {Array.isArray(users) && users.map((user) => (
                   <tr key={user.id} className="border-t">
                     <td className="px-6 py-3">{user.name}</td>
                     <td className="px-6 py-3">{user.email}</td>
