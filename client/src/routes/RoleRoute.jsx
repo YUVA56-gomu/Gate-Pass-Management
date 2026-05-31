@@ -1,12 +1,13 @@
 import React from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 /**
  * Role-based route component
  * Protects routes based on user role
+ * Uses Outlet to render nested routes in React Router v6
  */
-export const RoleRoute = ({ children, allowedRoles }) => {
+export const RoleRoute = ({ allowedRoles }) => {
   const { hasRole, loading, isAuthenticated } = useAuth()
 
   if (loading) {
@@ -25,10 +26,10 @@ export const RoleRoute = ({ children, allowedRoles }) => {
   }
 
   if (!hasRole(allowedRoles)) {
-    return <Navigate to="/unauthorized" replace />
+    return <Navigate to="/" replace />
   }
 
-  return children
+  return <Outlet />
 }
 
 export default RoleRoute

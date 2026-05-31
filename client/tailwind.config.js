@@ -4,7 +4,11 @@ export default {
     "./src/**/*.{js,jsx}"
   ],
   theme: {
-    extend: {}
+    extend: {
+      fontFamily: {
+        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+      }
+    }
   },
   plugins: []
 }

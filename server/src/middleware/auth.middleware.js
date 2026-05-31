@@ -39,4 +39,24 @@ export const optionalAuth = (req, res, next) => {
   }
 }
 
-export default { authenticate, optionalAuth }
+/**
+ * Role-based access control middleware
+ * @param {Array<string>} allowedRoles - Array of allowed roles
+ */
+export const roleMiddleware = (allowedRoles = []) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return sendError(res, 'Authentication required', 401)
+    }
+
+    if (!allowedRoles.includes(req.user.role)) {
+      return sendError(res, 'Insufficient permissions', 403)
+    }
+
+    next()
+  }
+}
+
+export const authMiddleware = authenticate
+
+export default { authenticate, optionalAuth, roleMiddleware, authMiddleware }

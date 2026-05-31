@@ -52,49 +52,50 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      {/* Student Routes */}
+      {/* Protected Routes - Wrapped with PrivateRoute */}
       <Route element={<PrivateRoute />}>
-        <Route element={<RoleRoute allowedRoles={['STUDENT']} />}>
-          <Route path="/student" element={<StudentDashboard />} />
-          <Route path="/student/dashboard" element={<StudentDashboard />} />
-          <Route path="/student/apply-pass" element={<ApplyPass />} />
-          <Route path="/student/my-passes" element={<MyPasses />} />
-          <Route path="/student/notifications" element={<StudentNotifications />} />
-          <Route path="/student/profile" element={<StudentProfile />} />
+        {/* Student Routes */}
+        <Route path="/student" element={<RoleRoute allowedRoles={['STUDENT']} />}>
+          <Route index element={<StudentDashboard />} />
+          <Route path="dashboard" element={<StudentDashboard />} />
+          <Route path="apply-pass" element={<ApplyPass />} />
+          <Route path="my-passes" element={<MyPasses />} />
+          <Route path="notifications" element={<StudentNotifications />} />
+          <Route path="profile" element={<StudentProfile />} />
         </Route>
 
         {/* Coordinator Routes */}
-        <Route element={<RoleRoute allowedRoles={['COORDINATOR']} />}>
-          <Route path="/coordinator" element={<CoordinatorDashboard />} />
-          <Route path="/coordinator/dashboard" element={<CoordinatorDashboard />} />
-          <Route path="/coordinator/requests" element={<CoordinatorRequests />} />
-          <Route path="/coordinator/history" element={<CoordinatorHistory />} />
+        <Route path="/coordinator" element={<RoleRoute allowedRoles={['COORDINATOR']} />}>
+          <Route index element={<CoordinatorDashboard />} />
+          <Route path="dashboard" element={<CoordinatorDashboard />} />
+          <Route path="requests" element={<CoordinatorRequests />} />
+          <Route path="history" element={<CoordinatorHistory />} />
         </Route>
 
         {/* Hostel Staff Routes */}
-        <Route element={<RoleRoute allowedRoles={['HOSTEL_STAFF']} />}>
-          <Route path="/hostel" element={<HostelDashboard />} />
-          <Route path="/hostel/dashboard" element={<HostelDashboard />} />
-          <Route path="/hostel/requests" element={<HostelRequests />} />
-          <Route path="/hostel/students" element={<HostelStudents />} />
-          <Route path="/hostel/all-passes" element={<HostelAllPasses />} />
+        <Route path="/hostel" element={<RoleRoute allowedRoles={['HOSTEL_STAFF']} />}>
+          <Route index element={<HostelDashboard />} />
+          <Route path="dashboard" element={<HostelDashboard />} />
+          <Route path="requests" element={<HostelRequests />} />
+          <Route path="students" element={<HostelStudents />} />
+          <Route path="all-passes" element={<HostelAllPasses />} />
         </Route>
 
         {/* Security Guard Routes */}
-        <Route element={<RoleRoute allowedRoles={['SECURITY']} />}>
-          <Route path="/security" element={<SecurityDashboard />} />
-          <Route path="/security/dashboard" element={<SecurityDashboard />} />
-          <Route path="/security/scanner" element={<QRScanner />} />
-          <Route path="/security/logs" element={<ScanLogs />} />
+        <Route path="/security" element={<RoleRoute allowedRoles={['SECURITY']} />}>
+          <Route index element={<SecurityDashboard />} />
+          <Route path="dashboard" element={<SecurityDashboard />} />
+          <Route path="scanner" element={<QRScanner />} />
+          <Route path="logs" element={<ScanLogs />} />
         </Route>
 
         {/* Admin Routes */}
-        <Route element={<RoleRoute allowedRoles={['ADMIN']} />}>
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/users" element={<UserManagement />} />
-          <Route path="/admin/reports" element={<AdminReports />} />
-          <Route path="/admin/settings" element={<AdminSettings />} />
+        <Route path="/admin" element={<RoleRoute allowedRoles={['ADMIN']} />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="users" element={<UserManagement />} />
+          <Route path="reports" element={<AdminReports />} />
+          <Route path="settings" element={<AdminSettings />} />
         </Route>
       </Route>
 

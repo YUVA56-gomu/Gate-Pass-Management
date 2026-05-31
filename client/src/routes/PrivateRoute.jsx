@@ -1,12 +1,13 @@
 import React from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 /**
  * Private route component
  * Protects routes that require authentication
+ * Uses Outlet to render nested routes in React Router v6
  */
-export const PrivateRoute = ({ children }) => {
+export const PrivateRoute = () => {
   const { isAuthenticated, loading } = useAuth()
 
   if (loading) {
@@ -24,7 +25,7 @@ export const PrivateRoute = ({ children }) => {
     return <Navigate to="/login" replace />
   }
 
-  return children
+  return <Outlet />
 }
 
 export default PrivateRoute

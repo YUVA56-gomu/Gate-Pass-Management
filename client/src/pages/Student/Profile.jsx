@@ -259,7 +259,7 @@ export const Profile = () => {
                 {/* USN */}
                 <div>
                   <label htmlFor="usn" className="block text-sm font-medium text-gray-700 mb-1">
-                    USN *
+                    USN * {profile && <span className="text-xs text-gray-500">(Cannot be changed)</span>}
                   </label>
                   <input
                     type="text"
@@ -269,11 +269,12 @@ export const Profile = () => {
                     onChange={handleChange}
                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       errors.usn ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    } ${profile ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                     placeholder="e.g., CS21001"
                     disabled={!!profile}
                   />
                   {errors.usn && <p className="text-red-600 text-sm mt-1">{errors.usn}</p>}
+                  {profile && <p className="text-gray-500 text-xs mt-1">USN cannot be changed after initial profile creation</p>}
                 </div>
 
                 {/* Department */}

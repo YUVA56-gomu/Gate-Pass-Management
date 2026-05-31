@@ -1,4 +1,5 @@
-import sequelize, { Op } from 'sequelize'
+import { Op } from 'sequelize'
+import sequelize from '../config/db.js'
 import { Pass, Approval, Student, User, Department } from '../models/index.js'
 
 /**

@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import QRCode from 'qrcode'
-import { sequelize } from '../config/db.js'
+import sequelize from '../config/db.js'
 import { Pass, QRToken, Student, User, Department, Approval } from '../models/index.js'
 
 /**

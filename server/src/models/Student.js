@@ -18,12 +18,12 @@ const Student = sequelize.define('Student', {
   },
   usn: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     unique: true
   },
   department_id: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
     references: {
       model: 'departments',
       key: 'id'
@@ -31,35 +31,39 @@ const Student = sequelize.define('Student', {
   },
   program_type: {
     type: DataTypes.ENUM('UG', 'PG'),
-    allowNull: false
+    allowNull: true
   },
   year_of_study: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: true
   },
   semester: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: true
   },
   gender: {
     type: DataTypes.ENUM('MALE', 'FEMALE', 'OTHER'),
-    allowNull: false
+    allowNull: true
   },
   hostel_name: {
-    type: DataTypes.STRING
+    type: DataTypes.STRING,
+    allowNull: true
   },
   hostel_type: {
     type: DataTypes.ENUM('BOYS', 'GIRLS'),
     allowNull: true
   },
   room_number: {
-    type: DataTypes.STRING
+    type: DataTypes.STRING,
+    allowNull: true
   },
   parent_phone: {
-    type: DataTypes.STRING
+    type: DataTypes.STRING,
+    allowNull: true
   },
   emergency_contact: {
-    type: DataTypes.STRING
+    type: DataTypes.STRING,
+    allowNull: true
   },
   createdAt: {
     type: DataTypes.DATE,

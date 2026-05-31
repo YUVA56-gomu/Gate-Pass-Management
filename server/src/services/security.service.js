@@ -1,5 +1,5 @@
 import { Op } from 'sequelize'
-import { sequelize } from '../config/db.js'
+import sequelize from '../config/db.js'
 import { Pass, GateLog, QRToken, Student, User, Department, Approval } from '../models/index.js'
 
 /**

@@ -80,7 +80,7 @@ export const registerStudent = async (data) => {
   // Hash password
   const hashedPassword = await hashPassword(password)
 
-  // Create user with STUDENT role (only User record, no Student profile yet)
+  // Create user with STUDENT role
   const user = await User.create({
     name: name.trim(),
     email: normalizedEmail,
@@ -88,6 +88,23 @@ export const registerStudent = async (data) => {
     phone: phone ? phone.trim() : null,
     role: 'STUDENT',
     is_active: true
+  })
+
+  // Create Student record with default null values for profile fields
+  // These will be filled in when student completes their profile
+  const student = await Student.create({
+    user_id: user.id,
+    usn: null,
+    department_id: null,
+    program_type: null,
+    year_of_study: null,
+    semester: null,
+    gender: null,
+    hostel_name: null,
+    hostel_type: null,
+    room_number: null,
+    parent_phone: null,
+    emergency_contact: null
   })
 
   // Generate token
@@ -101,6 +118,10 @@ export const registerStudent = async (data) => {
       phone: user.phone,
       role: user.role,
       is_active: user.is_active
+    },
+    student: {
+      id: student.id,
+      user_id: student.user_id
     },
     token,
     message: 'Student registered successfully. Please complete your profile after login.'

@@ -48,16 +48,56 @@ app.use('/notifications', notificationRoutes)
 // Error handling
 app.use(errorHandler)
 
+// Fix Student schema - make fields nullable
+const fixStudentSchema = async () => {
+  try {
+    const queryInterface = sequelize.getQueryInterface()
+    const tables = await queryInterface.showAllTables()
+    
+    if (!tables.includes('students')) {
+      return
+    }
+
+    const alterStatements = [
+      'ALTER TABLE students MODIFY COLUMN usn VARCHAR(255) NULL',
+      'ALTER TABLE students MODIFY COLUMN department_id INT NULL',
+      'ALTER TABLE students MODIFY COLUMN program_type ENUM("UG","PG") NULL',
+      'ALTER TABLE students MODIFY COLUMN year_of_study INT NULL',
+      'ALTER TABLE students MODIFY COLUMN semester INT NULL',
+      'ALTER TABLE students MODIFY COLUMN gender ENUM("MALE","FEMALE","OTHER") NULL',
+      'ALTER TABLE students MODIFY COLUMN hostel_name VARCHAR(255) NULL',
+      'ALTER TABLE students MODIFY COLUMN hostel_type ENUM("BOYS","GIRLS") NULL',
+      'ALTER TABLE students MODIFY COLUMN room_number VARCHAR(255) NULL',
+      'ALTER TABLE students MODIFY COLUMN parent_phone VARCHAR(255) NULL',
+      'ALTER TABLE students MODIFY COLUMN emergency_contact VARCHAR(255) NULL'
+    ]
+
+    for (const statement of alterStatements) {
+      try {
+        await sequelize.query(statement)
+      } catch (error) {
+        // Silently continue if column already nullable
+      }
+    }
+  } catch (error) {
+    console.error('Error fixing Student schema:', error.message)
+  }
+}
+
 // Database sync and server start
 const startServer = async () => {
   try {
     await sequelize.authenticate()
     console.log('Database connected')
     
-    await sequelize.sync({ alter: true })
+    // Fix schema before sync
+    await fixStudentSchema()
+    
+    // Use force: false to avoid dropping tables, and alter: false to avoid schema modification issues
+    await sequelize.sync({ force: false, alter: false })
     console.log('Database synced')
     
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`)
     })
   } catch (error) {
