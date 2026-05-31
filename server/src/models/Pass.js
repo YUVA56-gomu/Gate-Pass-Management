@@ -15,9 +15,10 @@ const Pass = sequelize.define('Pass', {
       key: 'id'
     }
   },
-  type: {
+  pass_type: {
     type: DataTypes.ENUM('DAILY', 'LONG_LEAVE'),
-    allowNull: false
+    allowNull: false,
+    defaultValue: 'DAILY'
   },
   reason: {
     type: DataTypes.TEXT,
@@ -27,13 +28,44 @@ const Pass = sequelize.define('Pass', {
     type: DataTypes.STRING,
     allowNull: false
   },
+  pass_date: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+    comment: 'For DAILY pass type - the date of the pass'
+  },
   from_date: {
-    type: DataTypes.DATE,
-    allowNull: false
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+    comment: 'For LONG_LEAVE pass type - leaving date'
   },
   to_date: {
-    type: DataTypes.DATE,
-    allowNull: false
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+    comment: 'For LONG_LEAVE pass type - returning date'
+  },
+  exit_time: {
+    type: DataTypes.TIME,
+    allowNull: true,
+    comment: 'For DAILY pass type - optional exit time'
+  },
+  expected_return_time: {
+    type: DataTypes.TIME,
+    allowNull: true,
+    comment: 'For DAILY pass type - optional expected return time'
+  },
+  parent_contact: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'For LONG_LEAVE pass type - parent phone number'
+  },
+  coordinator_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    },
+    comment: 'Assigned coordinator for approval'
   },
   status: {
     type: DataTypes.ENUM('PENDING_COORDINATOR', 'PENDING_HOSTEL', 'APPROVED', 'REJECTED', 'CANCELLED', 'COMPLETED'),

@@ -16,8 +16,8 @@ export const Profile = () => {
     usn: '',
     department_id: '',
     program_type: 'UG',
-    year_of_study: 1,
-    semester: 1,
+    year_of_study: '',
+    semester: '',
     gender: 'MALE',
     hostel_name: '',
     hostel_type: 'BOYS',
@@ -27,6 +27,8 @@ export const Profile = () => {
   })
 
   const [errors, setErrors] = useState({})
+  const [touched, setTouched] = useState({})
+  const [submitted, setSubmitted] = useState(false)
 
   // Fetch profile on mount
   useEffect(() => {
@@ -74,17 +76,45 @@ export const Profile = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target
+    console.log(`[Profile] Field changed: ${name} = ${value}`)
+    
+    // FIX: Convert numeric fields to integers, keep others as strings
+    // This ensures dropdown values match their option values
+    const convertedValue = 
+      name === 'department_id' || name === 'year_of_study' || name === 'semester' 
+        ? (value === '' ? '' : parseInt(value, 10))
+        : value
+    
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'department_id' || name === 'year_of_study' || name === 'semester' ? parseInt(value) : value
+      [name]: convertedValue
     }))
-    // Clear error for this field
+    
+    // FIX: Mark field as touched when user interacts with it
+    setTouched((prev) => ({
+      ...prev,
+      [name]: true
+    }))
+    
+    // Clear error for this field only if it was previously showing an error
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
         [name]: ''
       }))
     }
+    
+    console.log(`[Profile] FormData updated:`, { [name]: convertedValue })
+  }
+
+  // FIX: Add blur handler to mark fields as touched
+  const handleBlur = (e) => {
+    const { name } = e.target
+    console.log(`[Profile] Field blurred: ${name}`)
+    setTouched((prev) => ({
+      ...prev,
+      [name]: true
+    }))
   }
 
   const validateForm = () => {
@@ -102,11 +132,13 @@ export const Profile = () => {
       newErrors.program_type = 'Program type is required'
     }
 
-    if (!formData.year_of_study || formData.year_of_study < 1 || formData.year_of_study > 5) {
+    // FIX: Check for empty string instead of falsy value (0 is valid)
+    if (formData.year_of_study === '' || formData.year_of_study < 1 || formData.year_of_study > 5) {
       newErrors.year_of_study = 'Year of study must be between 1 and 5'
     }
 
-    if (!formData.semester || formData.semester < 1 || formData.semester > 8) {
+    // FIX: Check for empty string instead of falsy value (0 is valid)
+    if (formData.semester === '' || formData.semester < 1 || formData.semester > 8) {
       newErrors.semester = 'Semester must be between 1 and 8'
     }
 
@@ -114,6 +146,7 @@ export const Profile = () => {
       newErrors.gender = 'Gender is required'
     }
 
+    console.log('[Profile] Validation result:', newErrors)
     return newErrors
   }
 
@@ -121,10 +154,26 @@ export const Profile = () => {
     e.preventDefault()
     setError('')
     setSuccess('')
+    
+    console.log('[Profile] Form submitted')
+    console.log('[Profile] Current formData:', formData)
+    console.log('[Profile] Profile exists:', !!profile)
+    
+    // FIX: Mark all fields as touched when form is submitted
+    // This ensures all validation errors are shown
+    setSubmitted(true)
+    const allFieldsTouched = {}
+    Object.keys(formData).forEach((key) => {
+      allFieldsTouched[key] = true
+    })
+    setTouched(allFieldsTouched)
 
     const newErrors = validateForm()
+    console.log('[Profile] Validation errors:', newErrors)
+    
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
+      console.log('[Profile] Form validation failed:', newErrors)
       return
     }
 
@@ -133,18 +182,29 @@ export const Profile = () => {
     try {
       if (profile) {
         // Update existing profile
+        console.log('[Profile] Updating profile with data:', formData)
         const response = await studentAPI.updateStudentProfile(formData)
+        console.log('[Profile] Update response:', response)
         setProfile(response.data)
         setSuccess('Profile updated successfully')
+        console.log('[Profile] Profile updated successfully')
       } else {
         // Create new profile
+        console.log('[Profile] Creating profile with data:', formData)
         const response = await studentAPI.createStudentProfile(formData)
+        console.log('[Profile] Create response:', response)
         setProfile(response.data)
         setSuccess('Profile created successfully')
+        console.log('[Profile] Profile created successfully')
       }
       setIsEditing(false)
+      setSubmitted(false)
+      setTouched({})
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save profile')
+      console.error('[Profile] Error saving profile:', err)
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to save profile'
+      setError(errorMessage)
+      console.error('[Profile] Error details:', err.response?.data || err)
     } finally {
       setSaving(false)
     }
@@ -259,7 +319,7 @@ export const Profile = () => {
                 {/* USN */}
                 <div>
                   <label htmlFor="usn" className="block text-sm font-medium text-gray-700 mb-1">
-                    USN * {profile && <span className="text-xs text-gray-500">(Cannot be changed)</span>}
+                    USN *
                   </label>
                   <input
                     type="text"
@@ -267,14 +327,13 @@ export const Profile = () => {
                     name="usn"
                     value={formData.usn}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.usn ? 'border-red-500' : 'border-gray-300'
-                    } ${profile ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                      (touched.usn || submitted) && errors.usn ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder="e.g., CS21001"
-                    disabled={!!profile}
                   />
-                  {errors.usn && <p className="text-red-600 text-sm mt-1">{errors.usn}</p>}
-                  {profile && <p className="text-gray-500 text-xs mt-1">USN cannot be changed after initial profile creation</p>}
+                  {(touched.usn || submitted) && errors.usn && <p className="text-red-600 text-sm mt-1">{errors.usn}</p>}
                 </div>
 
                 {/* Department */}
@@ -287,8 +346,9 @@ export const Profile = () => {
                     name="department_id"
                     value={formData.department_id}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.department_id ? 'border-red-500' : 'border-gray-300'
+                      (touched.department_id || submitted) && errors.department_id ? 'border-red-500' : 'border-gray-300'
                     }`}
                   >
                     <option value="">Select Department</option>
@@ -298,7 +358,7 @@ export const Profile = () => {
                       </option>
                     ))}
                   </select>
-                  {errors.department_id && <p className="text-red-600 text-sm mt-1">{errors.department_id}</p>}
+                  {(touched.department_id || submitted) && errors.department_id && <p className="text-red-600 text-sm mt-1">{errors.department_id}</p>}
                 </div>
 
                 {/* Program Type */}
@@ -328,13 +388,14 @@ export const Profile = () => {
                     name="year_of_study"
                     value={formData.year_of_study}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.year_of_study ? 'border-red-500' : 'border-gray-300'
+                      (touched.year_of_study || submitted) && errors.year_of_study ? 'border-red-500' : 'border-gray-300'
                     }`}
                   >
+                    <option value="">Select Year</option>
                     {formData.program_type === 'UG' ? (
                       <>
-                        <option value="">Select Year</option>
                         {[1, 2, 3, 4].map((year) => (
                           <option key={year} value={year}>
                             Year {year}
@@ -343,7 +404,6 @@ export const Profile = () => {
                       </>
                     ) : (
                       <>
-                        <option value="">Select Year</option>
                         {[1, 2].map((year) => (
                           <option key={year} value={year}>
                             Year {year}
@@ -352,7 +412,7 @@ export const Profile = () => {
                       </>
                     )}
                   </select>
-                  {errors.year_of_study && <p className="text-red-600 text-sm mt-1">{errors.year_of_study}</p>}
+                  {(touched.year_of_study || submitted) && errors.year_of_study && <p className="text-red-600 text-sm mt-1">{errors.year_of_study}</p>}
                 </div>
 
                 {/* Semester */}
@@ -365,13 +425,14 @@ export const Profile = () => {
                     name="semester"
                     value={formData.semester}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.semester ? 'border-red-500' : 'border-gray-300'
+                      (touched.semester || submitted) && errors.semester ? 'border-red-500' : 'border-gray-300'
                     }`}
                   >
+                    <option value="">Select Semester</option>
                     {formData.program_type === 'UG' ? (
                       <>
-                        <option value="">Select Semester</option>
                         {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
                           <option key={sem} value={sem}>
                             Semester {sem}
@@ -380,7 +441,6 @@ export const Profile = () => {
                       </>
                     ) : (
                       <>
-                        <option value="">Select Semester</option>
                         {[1, 2, 3, 4].map((sem) => (
                           <option key={sem} value={sem}>
                             Semester {sem}
@@ -389,7 +449,7 @@ export const Profile = () => {
                       </>
                     )}
                   </select>
-                  {errors.semester && <p className="text-red-600 text-sm mt-1">{errors.semester}</p>}
+                  {(touched.semester || submitted) && errors.semester && <p className="text-red-600 text-sm mt-1">{errors.semester}</p>}
                 </div>
 
                 {/* Gender */}
@@ -402,15 +462,17 @@ export const Profile = () => {
                     name="gender"
                     value={formData.gender}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.gender ? 'border-red-500' : 'border-gray-300'
+                      (touched.gender || submitted) && errors.gender ? 'border-red-500' : 'border-gray-300'
                     }`}
                   >
+                    <option value="">Select Gender</option>
                     <option value="MALE">Male</option>
                     <option value="FEMALE">Female</option>
                     <option value="OTHER">Other</option>
                   </select>
-                  {errors.gender && <p className="text-red-600 text-sm mt-1">{errors.gender}</p>}
+                  {(touched.gender || submitted) && errors.gender && <p className="text-red-600 text-sm mt-1">{errors.gender}</p>}
                 </div>
 
                 {/* Hostel Name */}
@@ -424,6 +486,7 @@ export const Profile = () => {
                     name="hostel_name"
                     value={formData.hostel_name}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="e.g., Boys Hostel A"
                   />
@@ -439,6 +502,7 @@ export const Profile = () => {
                     name="hostel_type"
                     value={formData.hostel_type}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="BOYS">Boys</option>
@@ -457,6 +521,7 @@ export const Profile = () => {
                     name="room_number"
                     value={formData.room_number}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="e.g., 101"
                   />
@@ -473,6 +538,7 @@ export const Profile = () => {
                     name="parent_phone"
                     value={formData.parent_phone}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="e.g., 9876543210"
                   />
@@ -489,6 +555,7 @@ export const Profile = () => {
                     name="emergency_contact"
                     value={formData.emergency_contact}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="e.g., 9876543210"
                   />
@@ -511,6 +578,8 @@ export const Profile = () => {
                       setIsEditing(false)
                       setFormData(profile)
                       setErrors({})
+                      setTouched({})
+                      setSubmitted(false)
                     }}
                     className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 font-semibold py-2 px-4 rounded-lg transition"
                   >

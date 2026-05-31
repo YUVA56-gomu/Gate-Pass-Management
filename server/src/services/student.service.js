@@ -109,10 +109,16 @@ export const createStudentProfile = async (data) => {
  */
 export const updateStudentProfile = async (userId, data) => {
   try {
+    console.log('[updateStudentProfile] ===== UPDATE SERVICE START =====')
+    console.log('[updateStudentProfile] userId:', userId)
+    console.log('[updateStudentProfile] data:', data)
+    
     // Get existing student
     const student = await Student.findOne({
       where: { user_id: userId }
     })
+    
+    console.log('[updateStudentProfile] Found student:', student?.id, 'for user:', userId)
 
     if (!student) {
       throw new Error('Student profile not found')
@@ -157,6 +163,7 @@ export const updateStudentProfile = async (userId, data) => {
 
     // Check if USN is unique (if being updated)
     if (data.usn && data.usn !== student.usn) {
+      console.log('[updateStudentProfile] Checking USN uniqueness:', data.usn)
       const existingUSN = await Student.findOne({
         where: { usn: data.usn }
       })
@@ -168,6 +175,7 @@ export const updateStudentProfile = async (userId, data) => {
 
     // Check if department exists (if being updated)
     if (data.department_id && data.department_id !== student.department_id) {
+      console.log('[updateStudentProfile] Checking department exists:', data.department_id)
       const department = await Department.findByPk(data.department_id)
       if (!department) {
         throw new Error('Department not found')
@@ -175,11 +183,18 @@ export const updateStudentProfile = async (userId, data) => {
     }
 
     // Update student profile
+    console.log('[updateStudentProfile] Updating student with data:', data)
     await student.update(data)
+    console.log('[updateStudentProfile] Update successful')
 
     // Return with associations
-    return getStudentProfile(userId)
+    const updatedProfile = await getStudentProfile(userId)
+    console.log('[updateStudentProfile] ===== UPDATE SERVICE SUCCESS =====')
+    return updatedProfile
   } catch (error) {
+    console.error('[updateStudentProfile] ===== UPDATE SERVICE ERROR =====')
+    console.error('[updateStudentProfile] Error:', error.message)
+    console.error('[updateStudentProfile] Stack:', error.stack)
     throw new Error(`Failed to update student profile: ${error.message}`)
   }
 }

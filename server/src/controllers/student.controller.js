@@ -76,6 +76,10 @@ export const createProfile = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id
+    console.log('[updateProfile] ===== UPDATE PROFILE REQUEST =====')
+    console.log('[updateProfile] userId:', userId)
+    console.log('[updateProfile] req.body:', req.body)
+    
     const {
       usn,
       department_id,
@@ -90,7 +94,7 @@ export const updateProfile = async (req, res) => {
       emergency_contact
     } = req.body
 
-    const profile = await studentService.updateStudentProfile(userId, {
+    const updateData = {
       usn,
       department_id,
       program_type,
@@ -102,10 +106,20 @@ export const updateProfile = async (req, res) => {
       room_number,
       parent_phone,
       emergency_contact
-    })
+    }
+    
+    console.log('[updateProfile] updateData:', updateData)
+    
+    const profile = await studentService.updateStudentProfile(userId, updateData)
+    console.log('[updateProfile] Success - Profile updated:', profile?.id)
+    console.log('[updateProfile] ===== UPDATE PROFILE SUCCESS =====')
 
     return sendSuccess(res, profile, 'Profile updated successfully', 200)
   } catch (error) {
+    console.error('[updateProfile] ===== UPDATE PROFILE ERROR =====')
+    console.error('[updateProfile] Error message:', error.message)
+    console.error('[updateProfile] Full error:', error)
+    console.error('[updateProfile] ===== END ERROR =====')
     return sendError(res, error.message, 400)
   }
 }

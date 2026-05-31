@@ -84,6 +84,35 @@ const fixStudentSchema = async () => {
   }
 }
 
+// Run pass type migration
+const runPassTypeMigration = async () => {
+  try {
+    const queryInterface = sequelize.getQueryInterface()
+    const tables = await queryInterface.showAllTables()
+    
+    if (!tables.includes('passes')) {
+      return
+    }
+
+    // Check if pass_type column already exists
+    const columns = await queryInterface.describeTable('passes')
+    if (columns.pass_type) {
+      console.log('[MIGRATION] Pass type fields already exist, skipping migration')
+      return
+    }
+
+    console.log('[MIGRATION] Running pass type migration...')
+
+    // Import and run the migration
+    const { up } = await import('../migrations/add_pass_type_fields.js')
+    await up(queryInterface, sequelize.Sequelize)
+    
+    console.log('[MIGRATION] Pass type migration completed successfully')
+  } catch (error) {
+    console.error('[MIGRATION] Error running pass type migration:', error.message)
+  }
+}
+
 // Database sync and server start
 const startServer = async () => {
   try {
@@ -92,6 +121,9 @@ const startServer = async () => {
     
     // Fix schema before sync
     await fixStudentSchema()
+    
+    // Run pass type migration
+    await runPassTypeMigration()
     
     // Use force: false to avoid dropping tables, and alter: false to avoid schema modification issues
     await sequelize.sync({ force: false, alter: false })

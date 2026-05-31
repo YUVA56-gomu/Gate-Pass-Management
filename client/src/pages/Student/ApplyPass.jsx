@@ -14,11 +14,14 @@ export const ApplyPass = () => {
   const [errors, setErrors] = useState({})
 
   const [formData, setFormData] = useState({
-    type: 'DAILY',
+    pass_type: 'DAILY',
     reason: '',
     destination: '',
+    pass_date: '',
     from_date: '',
     to_date: '',
+    exit_time: '',
+    expected_return_time: '',
     parent_contact: ''
   })
 
@@ -54,11 +57,20 @@ export const ApplyPass = () => {
     }
   }
 
+  const getTodayDate = () => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    const day = String(today.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   const validateForm = () => {
     const newErrors = {}
+    const today = getTodayDate()
 
-    if (!formData.type) {
-      newErrors.type = 'Pass type is required'
+    if (!formData.pass_type) {
+      newErrors.pass_type = 'Pass type is required'
     }
 
     if (!formData.reason?.trim()) {
@@ -69,40 +81,34 @@ export const ApplyPass = () => {
       newErrors.destination = 'Destination is required'
     }
 
-    if (!formData.from_date) {
-      newErrors.from_date = 'From date is required'
-    }
-
-    if (!formData.to_date) {
-      newErrors.to_date = 'To date is required'
-    }
-
-    if (formData.from_date && formData.to_date) {
-      const fromDate = new Date(formData.from_date)
-      const toDate = new Date(formData.to_date)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-
-      // From date cannot be in the past
-      if (fromDate < today) {
-        newErrors.from_date = 'From date cannot be in the past'
-      }
-
-      // To date cannot be before from date
-      if (toDate < fromDate) {
-        newErrors.to_date = 'To date cannot be before from date'
-      }
-
-      // Daily pass rule: from_date must equal to_date
-      if (formData.type === 'DAILY') {
-        if (fromDate.getTime() !== toDate.getTime()) {
-          newErrors.to_date = 'For daily pass, from date and to date must be the same'
-        }
+    // DAILY PASS VALIDATION
+    if (formData.pass_type === 'DAILY') {
+      if (!formData.pass_date) {
+        newErrors.pass_date = 'Pass date is required'
+      } else if (formData.pass_date < today) {
+        newErrors.pass_date = 'Pass date cannot be in the past'
       }
     }
 
-    if (formData.type === 'LONG_LEAVE' && !formData.parent_contact?.trim()) {
-      newErrors.parent_contact = 'Parent contact is required for long leave'
+    // LONG LEAVE VALIDATION
+    if (formData.pass_type === 'LONG_LEAVE') {
+      if (!formData.from_date) {
+        newErrors.from_date = 'Leaving date is required'
+      } else if (formData.from_date < today) {
+        newErrors.from_date = 'Leaving date cannot be in the past'
+      }
+
+      if (!formData.to_date) {
+        newErrors.to_date = 'Returning date is required'
+      } else if (formData.from_date && formData.to_date <= formData.from_date) {
+        newErrors.to_date = 'Returning date must be after leaving date'
+      }
+
+      if (!formData.parent_contact?.trim()) {
+        newErrors.parent_contact = 'Parent contact is required for long leave'
+      } else if (!/^\d{10}$/.test(formData.parent_contact.replace(/\D/g, ''))) {
+        newErrors.parent_contact = 'Parent contact must be a valid phone number'
+      }
     }
 
     return newErrors
@@ -186,24 +192,53 @@ export const ApplyPass = () => {
         {profileComplete && (
           <div className="bg-white rounded-lg shadow">
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              {/* Pass Type */}
+              {/* Pass Type Tabs */}
               <div>
-                <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
                   Pass Type *
                 </label>
-                <select
-                  id="type"
-                  name="type"
-                  value={formData.type}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.type ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                >
-                  <option value="DAILY">Daily Pass</option>
-                  <option value="LONG_LEAVE">Long Leave</option>
-                </select>
-                {errors.type && <p className="text-red-600 text-sm mt-1">{errors.type}</p>}
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        pass_type: 'DAILY',
+                        from_date: '',
+                        to_date: '',
+                        parent_contact: ''
+                      }))
+                      setErrors({})
+                    }}
+                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition ${
+                      formData.pass_type === 'DAILY'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Daily Pass
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        pass_type: 'LONG_LEAVE',
+                        pass_date: '',
+                        exit_time: '',
+                        expected_return_time: ''
+                      }))
+                      setErrors({})
+                    }}
+                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition ${
+                      formData.pass_type === 'LONG_LEAVE'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Long Leave
+                  </button>
+                </div>
               </div>
 
               {/* Reason */}
@@ -244,62 +279,118 @@ export const ApplyPass = () => {
                 {errors.destination && <p className="text-red-600 text-sm mt-1">{errors.destination}</p>}
               </div>
 
-              {/* Dates */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="from_date" className="block text-sm font-medium text-gray-700 mb-1">
-                    From Date *
-                  </label>
-                  <input
-                    type="date"
-                    id="from_date"
-                    name="from_date"
-                    value={formData.from_date}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.from_date ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.from_date && <p className="text-red-600 text-sm mt-1">{errors.from_date}</p>}
-                </div>
+              {/* DAILY PASS FIELDS */}
+              {formData.pass_type === 'DAILY' && (
+                <>
+                  <div>
+                    <label htmlFor="pass_date" className="block text-sm font-medium text-gray-700 mb-1">
+                      Pass Date *
+                    </label>
+                    <input
+                      type="date"
+                      id="pass_date"
+                      name="pass_date"
+                      value={formData.pass_date}
+                      onChange={handleChange}
+                      min={getTodayDate()}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.pass_date ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                    {errors.pass_date && <p className="text-red-600 text-sm mt-1">{errors.pass_date}</p>}
+                  </div>
 
-                <div>
-                  <label htmlFor="to_date" className="block text-sm font-medium text-gray-700 mb-1">
-                    To Date *
-                  </label>
-                  <input
-                    type="date"
-                    id="to_date"
-                    name="to_date"
-                    value={formData.to_date}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.to_date ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.to_date && <p className="text-red-600 text-sm mt-1">{errors.to_date}</p>}
-                </div>
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="exit_time" className="block text-sm font-medium text-gray-700 mb-1">
+                        Exit Time (Optional)
+                      </label>
+                      <input
+                        type="time"
+                        id="exit_time"
+                        name="exit_time"
+                        value={formData.exit_time}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
 
-              {/* Parent Contact (for Long Leave) */}
-              {formData.type === 'LONG_LEAVE' && (
-                <div>
-                  <label htmlFor="parent_contact" className="block text-sm font-medium text-gray-700 mb-1">
-                    Parent Contact *
-                  </label>
-                  <input
-                    type="tel"
-                    id="parent_contact"
-                    name="parent_contact"
-                    value={formData.parent_contact}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.parent_contact ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="e.g., 9876543210"
-                  />
-                  {errors.parent_contact && <p className="text-red-600 text-sm mt-1">{errors.parent_contact}</p>}
-                </div>
+                    <div>
+                      <label htmlFor="expected_return_time" className="block text-sm font-medium text-gray-700 mb-1">
+                        Expected Return Time (Optional)
+                      </label>
+                      <input
+                        type="time"
+                        id="expected_return_time"
+                        name="expected_return_time"
+                        value={formData.expected_return_time}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* LONG LEAVE FIELDS */}
+              {formData.pass_type === 'LONG_LEAVE' && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="from_date" className="block text-sm font-medium text-gray-700 mb-1">
+                        Leaving Date *
+                      </label>
+                      <input
+                        type="date"
+                        id="from_date"
+                        name="from_date"
+                        value={formData.from_date}
+                        onChange={handleChange}
+                        min={getTodayDate()}
+                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors.from_date ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                      {errors.from_date && <p className="text-red-600 text-sm mt-1">{errors.from_date}</p>}
+                    </div>
+
+                    <div>
+                      <label htmlFor="to_date" className="block text-sm font-medium text-gray-700 mb-1">
+                        Returning Date *
+                      </label>
+                      <input
+                        type="date"
+                        id="to_date"
+                        name="to_date"
+                        value={formData.to_date}
+                        onChange={handleChange}
+                        min={formData.from_date || getTodayDate()}
+                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors.to_date ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                      {errors.to_date && <p className="text-red-600 text-sm mt-1">{errors.to_date}</p>}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="parent_contact" className="block text-sm font-medium text-gray-700 mb-1">
+                      Parent Contact (Phone Number) *
+                    </label>
+                    <input
+                      type="tel"
+                      id="parent_contact"
+                      name="parent_contact"
+                      value={formData.parent_contact}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.parent_contact ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="e.g., 9876543210"
+                    />
+                    {errors.parent_contact && <p className="text-red-600 text-sm mt-1">{errors.parent_contact}</p>}
+                  </div>
+                </>
               )}
 
               {/* Buttons */}

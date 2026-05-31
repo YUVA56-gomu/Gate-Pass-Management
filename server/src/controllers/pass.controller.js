@@ -6,7 +6,20 @@ import { sendSuccess, sendError } from '../utils/response.js'
 export const createPass = async (req, res) => {
   try {
     const userId = req.user.id
-    const { type, reason, destination, from_date, to_date, parent_contact } = req.body
+    const { pass_type, reason, destination, pass_date, from_date, to_date, exit_time, expected_return_time, parent_contact } = req.body
+
+    console.log('[PASS CONTROLLER] Creating pass for user:', userId)
+    console.log('[PASS CONTROLLER] Request body:', {
+      pass_type,
+      reason,
+      destination,
+      pass_date,
+      from_date,
+      to_date,
+      exit_time,
+      expected_return_time,
+      parent_contact
+    })
 
     // Check if student profile is complete
     const isComplete = await studentService.isProfileComplete(userId)
@@ -20,19 +33,32 @@ export const createPass = async (req, res) => {
       return sendError(res, 'Student profile not found', 404)
     }
 
+    console.log('[PASS CONTROLLER] Student found:', { id: student.id, department_id: student.department_id })
+
     // Create pass
     const pass = await passService.createPass({
       student_id: student.id,
-      type,
+      pass_type,
       reason,
       destination,
+      pass_date,
       from_date,
       to_date,
+      exit_time,
+      expected_return_time,
       parent_contact
+    })
+
+    console.log('[PASS CONTROLLER] Pass created successfully:', {
+      id: pass.id,
+      pass_type: pass.pass_type,
+      coordinator_id: pass.coordinator_id,
+      status: pass.status
     })
 
     return sendSuccess(res, pass, 'Pass created successfully', 201)
   } catch (error) {
+    console.error('[PASS CONTROLLER] Error creating pass:', error.message)
     return sendError(res, error.message, 400)
   }
 }
