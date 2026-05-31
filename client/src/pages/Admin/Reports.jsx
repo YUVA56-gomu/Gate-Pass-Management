@@ -1,3 +1,4 @@
+import jsPDF from'jspdf'
 import { useState, useEffect } from 'react'
 import Navbar from '../../components/common/Navbar'
 import Sidebar from '../../components/common/Sidebar'
@@ -124,20 +125,87 @@ function Reports() {
   }
 
   const handleExportPDF = async () => {
-    try {
-      setError(null)
-      setSuccess(null)
-      const response = await exportReportAsPDF(activeTab)
-      if (response.success) {
-        setSuccess('PDF data prepared successfully')
-      } else {
-        setError(response.message)
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to export report as PDF')
-    }
-  }
+  try {
+    setError(null)
+    setSuccess(null)
 
+    const response = await exportReportAsPDF(activeTab)
+
+    if (!response.success) {
+      setError(response.message)
+      return
+    }
+
+    const report = response.data
+
+    const doc = new jsPDF()
+
+    doc.setFontSize(18)
+    doc.text(`${activeTab.toUpperCase()} REPORT`, 20, 20)
+
+    doc.setFontSize(10)
+    doc.text(
+      `Generated: ${new Date().toLocaleString()}`,
+      20,
+      30
+    )
+
+    let y = 50
+
+    const addContent = (data, indent = 0) => {
+      if (Array.isArray(data)) {
+        data.forEach((item, index) => {
+          doc.text(`${index + 1}.`, 20 + indent, y)
+          y += 8
+          addContent(item, indent + 5)
+        })
+      } else if (
+        typeof data === 'object' &&
+        data !== null
+      ) {
+        Object.entries(data).forEach(([key, value]) => {
+          if (
+            typeof value === 'object' &&
+            value !== null
+          ) {
+            doc.text(
+              `${key}:`,
+              20 + indent,
+              y
+            )
+            y += 8
+            addContent(value, indent + 5)
+          } else {
+            doc.text(
+              `${key}: ${value}`,
+              20 + indent,
+              y
+            )
+            y += 8
+          }
+
+          // Prevent page overflow
+          if (y > 270) {
+            doc.addPage()
+            y = 20
+          }
+        })
+      }
+    }
+
+    addContent(report.data)
+
+    doc.save(`${activeTab}-report.pdf`)
+
+    setSuccess('PDF exported successfully')
+  } catch (err) {
+    console.error(err)
+    setError(
+      err.message ||
+        'Failed to export report as PDF'
+    )
+  }
+}
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar />
