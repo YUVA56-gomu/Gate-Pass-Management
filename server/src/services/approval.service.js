@@ -8,7 +8,7 @@ export const getPendingLongLeaveRequests = async () => {
   try {
     const passes = await Pass.findAll({
       where: {
-        type: 'LONG_LEAVE',
+        pass_type: 'LONG_LEAVE',
         status: 'PENDING_COORDINATOR'
       },
       include: [
@@ -53,7 +53,7 @@ export const approveLongLeaveRequest = async (passId, coordinatorId, remarks = n
     }
 
     // Validation: Pass type is LONG_LEAVE
-    if (pass.type !== 'LONG_LEAVE') {
+    if (pass.pass_type !== 'LONG_LEAVE') {
       await transaction.rollback()
       throw new Error('Only LONG_LEAVE passes can be approved by coordinator')
     }
@@ -175,7 +175,7 @@ export const getCoordinatorApprovalHistory = async (coordinatorId) => {
       include: [
         {
           model: Pass,
-          attributes: ['id', 'type', 'reason', 'destination', 'from_date', 'to_date', 'status'],
+          attributes: ['id', 'pass_type', 'reason', 'destination', 'from_date', 'to_date', 'status'],
           include: [
             {
               model: Student,

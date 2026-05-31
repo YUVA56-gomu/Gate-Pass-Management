@@ -159,9 +159,9 @@ export const getAllPasses = async (filter = 'ALL') => {
 
     // Apply filter
     if (filter === 'DAILY') {
-      whereClause.type = 'DAILY'
+      whereClause.pass.type = 'DAILY'
     } else if (filter === 'LONG_LEAVE') {
-      whereClause.type = 'LONG_LEAVE'
+      whereClause.pass.type = 'LONG_LEAVE'
     } else if (filter === 'APPROVED') {
       whereClause.status = 'APPROVED'
     } else if (filter === 'REJECTED') {
@@ -275,7 +275,7 @@ export const getDashboardStats = async () => {
     const studentsOutside = await Pass.count({
       where: {
         status: 'APPROVED',
-        type: 'DAILY',
+        pass_type: 'DAILY',
         from_date: {
           [Op.gte]: today
         }
@@ -305,7 +305,7 @@ export const getRecentActivity = async (hostelStaffId) => {
       include: [
         {
           model: Pass,
-          attributes: ['id', 'type', 'reason', 'destination', 'from_date', 'to_date', 'status'],
+          attributes: ['id', 'pass_type', 'reason', 'destination', 'from_date', 'to_date', 'status'],
           include: [
             {
               model: Student,
