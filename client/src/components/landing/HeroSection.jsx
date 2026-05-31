@@ -37,7 +37,9 @@ export const HeroSection = () => {
   }, [textIndex])
 
   return (
-    <section className="min-h-screen pt-32 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-hidden">
+    <section 
+    id="home"
+    className="min-h-screen pt-32 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-hidden">
       {/* Bubble Decorations */}
       <BubbleDecorations variant="hero" />
 

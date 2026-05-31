@@ -48,7 +48,9 @@ export const PortalCards = () => {
   ]
 
   return (
-    <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white via-purple-50/20 to-white relative overflow-hidden">
+    <section
+    id="portals"
+    className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white via-purple-50/20 to-white relative overflow-hidden">
       {/* Bubble Decorations */}
       <BubbleDecorations variant="section" />
 

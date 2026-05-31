@@ -1,9 +1,9 @@
+@import './styles/designSystem.css';
+@import './styles/animations.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import './styles/designSystem.css';
-@import './styles/animations.css';
 
 * {
   margin: 0;
