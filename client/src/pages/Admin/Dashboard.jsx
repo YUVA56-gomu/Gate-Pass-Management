@@ -217,19 +217,19 @@ export const AdminDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatsCard
                 label="Total Students"
-                value={stats?.totalStudents || 0}
+                value={stats?.users?.totalStudents || 0}
                 icon={<svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10.5 1.5H5.75A2.25 2.25 0 003.5 3.75v12.5A2.25 2.25 0 005.75 18.5h8.5a2.25 2.25 0 002.25-2.25V6.5m-11-3v3m0 0h3m-3 0L10.5 1.5m0 4.5h3" /></svg>}
                 color="blue"
               />
               <StatsCard
                 label="Coordinators"
-                value={stats?.totalCoordinators || 0}
+                value={stats?.users?.totalCoordinators || 0}
                 icon={<svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" /></svg>}
                 color="purple"
               />
               <StatsCard
                 label="Hostel Staff"
-                value={stats?.totalHostelStaff || 0}
+                value={stats?.users?.totalHostelStaff || 0}
                 icon={<svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>}
                 color="green"
               />
@@ -298,7 +298,8 @@ export const AdminDashboard = () => {
                       </thead>
                       <tbody>
                         {filteredUsers.slice(0, 8).map((u) => (
-                          <tr key={u._id} className="border-b border-gray-100 hover:bg-gray-50 transition">
+                          <tr key={u.id || u._id} 
+                          className="border-b border-gray-100 hover:bg-gray-50 transition">
                             <td className="py-3 px-4 text-gray-900 font-medium">{u.name}</td>
                             <td className="py-3 px-4 text-gray-600 text-sm">{u.email}</td>
                             <td className="py-3 px-4">
@@ -400,25 +401,25 @@ export const AdminDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatsCard
                 label="Total Passes"
-                value={stats?.totalPasses || 0}
+                value={stats?.passes?.totalPasses || 0}
                 icon={<svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5z" /></svg>}
                 color="blue"
               />
               <StatsCard
                 label="Approved"
-                value={stats?.approvedPasses || 0}
+                value={stats?.passes?.approvedPasses || 0}
                 icon={<svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>}
                 color="green"
               />
               <StatsCard
                 label="Rejected"
-                value={stats?.rejectedPasses || 0}
+                value={stats?.passes?.rejectedPasses || 0}
                 icon={<svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>}
                 color="red"
               />
               <StatsCard
                 label="Students Outside"
-                value={stats?.studentsOutside || 0}
+                value={stats?.passes?.rejectedPasses || 0}
                 icon={<svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" /></svg>}
                 color="yellow"
               />
