@@ -208,7 +208,7 @@ function Reports() {
 }
   return (
     <div className="flex h-screen bg-gray-100">
-      <Sidebar />
+      <Sidebar role="admin" />
       <div className="flex-1 flex flex-col">
         <Navbar />
         <div className="flex-1 overflow-auto p-6">
