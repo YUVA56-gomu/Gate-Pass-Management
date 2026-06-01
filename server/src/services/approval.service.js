@@ -11,14 +11,20 @@ export const getPendingLongLeaveRequests = async () => {
         pass_type: 'LONG_LEAVE',
         status: 'PENDING_COORDINATOR'
       },
+      attributes: [
+        'id', 'pass_type', 'reason', 'destination', 'status',
+        'pass_date', 'from_date', 'to_date', 'leaving_date', 'returning_date',
+        'exit_time', 'expected_return_time', 'parent_contact',
+        'coordinator_id', 'hostel_staff_id', 'createdAt'
+      ],
       include: [
         {
           model: Student,
-          attributes: ['id', 'usn'],
+          attributes: ['id', 'usn', 'hostel_name', 'room_number', 'parent_phone', 'year_of_study', 'semester', 'program_type'],
           include: [
             {
               model: User,
-              attributes: ['id', 'name', 'email']
+              attributes: ['id', 'name', 'email', 'phone']
             },
             {
               model: Department,

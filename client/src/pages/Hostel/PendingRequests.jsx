@@ -3,11 +3,37 @@ import * as hostelAPI from '../../api/hostel.api'
 import { DashboardShell } from '../../components/layouts/DashboardShell'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Modal } from '../../components/ui/Modal'
-import { StatusBadge } from '../../components/ui/StatusBadge'
 
 function fmt(date) {
   if (!date) return '—'
   return new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function fmtTime(t) {
+  if (!t) return '—'
+  const [h, m] = t.split(':')
+  const d = new Date(); d.setHours(+h, +m)
+  return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+}
+
+function DetailRow({ label, value }) {
+  return (
+    <div className="flex justify-between items-start gap-4 py-2 border-b border-slate-100 last:border-0">
+      <span className="text-xs font-medium text-slate-500 uppercase tracking-wide flex-shrink-0 w-36">{label}</span>
+      <span className="text-sm text-slate-800 font-medium text-right">{value || '—'}</span>
+    </div>
+  )
+}
+
+function Section({ title, children }) {
+  return (
+    <div className="mb-4">
+      <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">{title}</p>
+      <div className="bg-slate-50 rounded-xl border border-slate-200 px-4 py-1">
+        {children}
+      </div>
+    </div>
+  )
 }
 
 function CoordBadge({ pass }) {
@@ -22,7 +48,7 @@ export function PendingRequests() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [selected, setSelected] = useState(null)
-  const [modalType, setModalType] = useState(null) // 'approve' | 'reject'
+  const [view, setView] = useState('details') // 'details' | 'approve' | 'reject'
   const [remarks, setRemarks] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [modalError, setModalError] = useState('')
@@ -43,10 +69,8 @@ export function PendingRequests() {
     } finally { setLoading(false) }
   }
 
-  const openModal = (req, type) => {
-    setSelected(req); setModalType(type); setRemarks(''); setModalError('')
-  }
-  const closeModal = () => { setSelected(null); setModalType(null); setRemarks(''); setModalError('') }
+  const openDetails = (req) => { setSelected(req); setView('details'); setRemarks(''); setModalError('') }
+  const closeModal  = () => { setSelected(null); setView('details'); setRemarks(''); setModalError('') }
 
   const handleApprove = async () => {
     setModalError(''); setSubmitting(true)
@@ -102,7 +126,7 @@ export function PendingRequests() {
               <thead>
                 <tr>
                   <th>Student</th><th>Type</th><th>Coordinator</th>
-                  <th>Reason</th><th>Dates</th><th>Actions</th>
+                  <th>Destination</th><th>Dates</th><th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -125,7 +149,7 @@ export function PendingRequests() {
                       </span>
                     </td>
                     <td><CoordBadge pass={req} /></td>
-                    <td><span className="text-sm text-slate-600 line-clamp-1 max-w-xs">{req.reason || '—'}</span></td>
+                    <td><span className="text-sm text-slate-600">{req.destination || '—'}</span></td>
                     <td>
                       <span className="text-sm text-slate-600">
                         {passType(req) === 'DAILY' ? fmt(fromDate(req)) : `${fmt(fromDate(req))} → ${fmt(toDate(req))}`}
@@ -135,16 +159,10 @@ export function PendingRequests() {
                       {req.status === 'PENDING_COORDINATOR' ? (
                         <span className="text-xs text-slate-400 italic">Awaiting Coordinator</span>
                       ) : (
-                        <div className="flex items-center gap-1.5">
-                          <button onClick={() => openModal(req, 'approve')}
-                            className="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-semibold hover:bg-emerald-100 transition-colors border border-emerald-200">
-                            Approve
-                          </button>
-                          <button onClick={() => openModal(req, 'reject')}
-                            className="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 text-xs font-semibold hover:bg-red-100 transition-colors border border-red-200">
-                            Reject
-                          </button>
-                        </div>
+                        <button onClick={() => openDetails(req)}
+                          className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition-colors border border-blue-200">
+                          View Details
+                        </button>
                       )}
                     </td>
                   </tr>
@@ -155,23 +173,92 @@ export function PendingRequests() {
         )}
       </div>
 
-      {/* Approve Modal */}
-      <Modal isOpen={modalType === 'approve'} onClose={closeModal} title="Approve Pass" size="sm"
+      {/* Details / Action Modal */}
+      <Modal
+        isOpen={!!selected}
+        onClose={closeModal}
+        title={
+          view === 'approve' ? 'Approve Pass' :
+          view === 'reject'  ? 'Reject Pass'  :
+          'Gate Pass Details'
+        }
+        size="md"
         footer={
-          <div className="flex gap-3">
-            <button onClick={closeModal} className="flex-1 btn-secondary py-2.5">Cancel</button>
-            <button onClick={handleApprove} disabled={submitting}
-              className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-50">
-              {submitting ? 'Approving...' : 'Approve Pass'}
-            </button>
+          view === 'details' ? (
+            <div className="flex gap-3">
+              <button onClick={closeModal} className="flex-1 btn-secondary py-2.5">Close</button>
+              <button onClick={() => { setView('reject'); setRemarks(''); setModalError('') }}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 text-white font-semibold text-sm hover:bg-red-700 transition-colors">
+                Reject
+              </button>
+              <button onClick={() => { setView('approve'); setRemarks(''); setModalError('') }}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition-colors">
+                Approve
+              </button>
+            </div>
+          ) : view === 'approve' ? (
+            <div className="flex gap-3">
+              <button onClick={() => setView('details')} className="flex-1 btn-secondary py-2.5">Back</button>
+              <button onClick={handleApprove} disabled={submitting}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-50">
+                {submitting ? 'Approving...' : 'Confirm Approve'}
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-3">
+              <button onClick={() => setView('details')} className="flex-1 btn-secondary py-2.5">Back</button>
+              <button onClick={handleReject} disabled={submitting || !remarks?.trim()}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 text-white font-semibold text-sm hover:bg-red-700 transition-colors disabled:opacity-50">
+                {submitting ? 'Rejecting...' : 'Confirm Reject'}
+              </button>
+            </div>
+          )
+        }
+      >
+        {selected && view === 'details' && (
+          <div className="space-y-3">
+            <Section title="Student Information">
+              <DetailRow label="Full Name"    value={selected.Student?.User?.name} />
+              <DetailRow label="USN"          value={selected.Student?.usn} />
+              <DetailRow label="Department"   value={selected.Student?.Department?.name} />
+              <DetailRow label="Program"      value={selected.Student?.program_type} />
+              <DetailRow label="Year / Sem"   value={selected.Student?.year_of_study && selected.Student?.semester ? `Year ${selected.Student.year_of_study} — Sem ${selected.Student.semester}` : null} />
+              <DetailRow label="Email"        value={selected.Student?.User?.email} />
+              <DetailRow label="Phone"        value={selected.Student?.User?.phone} />
+            </Section>
+
+            <Section title="Hostel Information">
+              <DetailRow label="Hostel"       value={selected.Student?.hostel_name} />
+              <DetailRow label="Room No."     value={selected.Student?.room_number} />
+              <DetailRow label="Parent Phone" value={selected.Student?.parent_phone || selected.parent_contact} />
+            </Section>
+
+            <Section title="Pass Details">
+              <DetailRow label="Pass Type"    value={passType(selected) === 'LONG_LEAVE' ? 'Long Leave' : 'Daily'} />
+              <DetailRow label="Destination"  value={selected.destination} />
+              <DetailRow label="Reason"       value={selected.reason} />
+              {passType(selected) === 'DAILY' ? (
+                <>
+                  <DetailRow label="Pass Date"      value={fmt(selected.pass_date)} />
+                  <DetailRow label="Exit Time"      value={fmtTime(selected.exit_time)} />
+                  <DetailRow label="Return Time"    value={fmtTime(selected.expected_return_time)} />
+                </>
+              ) : (
+                <>
+                  <DetailRow label="Leaving Date"   value={fmt(selected.leaving_date || selected.from_date)} />
+                  <DetailRow label="Returning Date" value={fmt(selected.returning_date || selected.to_date)} />
+                  <DetailRow label="Parent Contact" value={selected.parent_contact || selected.Student?.parent_phone} />
+                </>
+              )}
+              <DetailRow label="Applied On"   value={fmt(selected.createdAt)} />
+            </Section>
           </div>
-        }>
-        {selected && (
+        )}
+
+        {selected && view === 'approve' && (
           <div className="space-y-4">
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-sm">
-              <div className="flex justify-between"><span className="text-slate-500">Student:</span><span className="font-medium">{selected.Student?.User?.name}</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">USN:</span><span className="font-medium font-mono">{selected.Student?.usn}</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Type:</span><span className="font-medium">{passType(selected) === 'LONG_LEAVE' ? 'Long Leave' : 'Daily'}</span></div>
+            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-800">
+              You are about to <strong>approve</strong> the pass for <strong>{selected.Student?.User?.name}</strong> ({selected.Student?.usn}).
             </div>
             {modalError && <p className="text-xs text-red-600">{modalError}</p>}
             <div>
@@ -181,24 +268,11 @@ export function PendingRequests() {
             </div>
           </div>
         )}
-      </Modal>
 
-      {/* Reject Modal */}
-      <Modal isOpen={modalType === 'reject'} onClose={closeModal} title="Reject Pass" size="sm"
-        footer={
-          <div className="flex gap-3">
-            <button onClick={closeModal} className="flex-1 btn-secondary py-2.5">Cancel</button>
-            <button onClick={handleReject} disabled={submitting || !remarks?.trim()}
-              className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 text-white font-semibold text-sm hover:bg-red-700 transition-colors disabled:opacity-50">
-              {submitting ? 'Rejecting...' : 'Reject Pass'}
-            </button>
-          </div>
-        }>
-        {selected && (
+        {selected && view === 'reject' && (
           <div className="space-y-4">
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-sm">
-              <div className="flex justify-between"><span className="text-slate-500">Student:</span><span className="font-medium">{selected.Student?.User?.name}</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">USN:</span><span className="font-medium font-mono">{selected.Student?.usn}</span></div>
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-800">
+              You are about to <strong>reject</strong> the pass for <strong>{selected.Student?.User?.name}</strong> ({selected.Student?.usn}).
             </div>
             {modalError && <p className="text-xs text-red-600">{modalError}</p>}
             <div>
