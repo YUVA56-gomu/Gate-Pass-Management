@@ -74,6 +74,15 @@ export const approvePass = async (passId, hostelStaffId, remarks = null) => {
 
     console.log('[HOSTEL SERVICE] Pass found, status:', pass.status)
 
+    // Backend validation: Prevent duplicate approval/rejection
+    if (pass.status === 'APPROVED') {
+      throw new Error('Pass has already been approved')
+    }
+
+    if (pass.status === 'REJECTED') {
+      throw new Error('Pass has already been rejected')
+    }
+
     if (pass.status !== 'PENDING_HOSTEL') {
       throw new Error(`This pass cannot be approved (current status: ${pass.status})`)
     }
@@ -181,6 +190,15 @@ export const rejectPass = async (passId, hostelStaffId, remarks) => {
     }
 
     console.log('[HOSTEL SERVICE] Pass found, status:', pass.status)
+
+    // Backend validation: Prevent duplicate approval/rejection
+    if (pass.status === 'APPROVED') {
+      throw new Error('Pass has already been approved')
+    }
+
+    if (pass.status === 'REJECTED') {
+      throw new Error('Pass has already been rejected')
+    }
 
     if (pass.status !== 'PENDING_HOSTEL') {
       throw new Error(`This pass cannot be rejected (current status: ${pass.status})`)

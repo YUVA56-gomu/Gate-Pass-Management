@@ -5,41 +5,21 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
+/* ── Base Typography ── */
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Heading weights */
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 700;
-}
+h1, h2, h3, h4, h5, h6 { font-weight: 700; }
+button { font-family: inherit; }
 
-/* Section titles */
-.section-title {
-  font-weight: 600;
-}
-
-/* Body text */
-p {
-  font-weight: 400;
-}
-
-/* Button weights */
-button {
-  font-weight: 600;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-/* Link weights */
-a {
-  font-weight: 500;
+/* ── Tailwind Layer Overrides ── */
+@layer components {
+  /* Ensure our custom classes work alongside Tailwind */
+  .glass {
+    @apply backdrop-blur-md;
+  }
 }

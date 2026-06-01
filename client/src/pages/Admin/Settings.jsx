@@ -1,75 +1,68 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import Navbar from '../../components/common/Navbar'
-import Sidebar from '../../components/common/Sidebar'
 import { useNotification } from '../../hooks/useNotification'
 import API from '../../api/axios'
+import { DashboardShell } from '../../components/layouts/DashboardShell'
+import { PageHeader } from '../../components/ui/PageHeader'
 
-function Settings() {
-  const { register, handleSubmit, formState: { errors } } = useForm()
+function Field({ label, error, children }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>
+      {children}
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+    </div>
+  )
+}
+
+export function Settings() {
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm()
   const { addNotification } = useNotification()
-  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
 
   const onSubmit = async (data) => {
-    setLoading(true)
     try {
       await API.put('/settings', data)
       addNotification('Settings updated successfully', 'success')
-    } catch (error) {
-      addNotification('Failed to update settings', 'error')
-    } finally {
-      setLoading(false)
-    }
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch { addNotification('Failed to update settings', 'error') }
   }
 
   return (
-    <div className="flex h-screen">
-      <Sidebar role="admin" />
-      <div className="flex-1 flex flex-col">
-        <Navbar />
-        <main className="flex-1 overflow-auto p-6">
-          <h1 className="text-3xl font-bold mb-6">Settings</h1>
-          <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-6 rounded shadow max-w-2xl">
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">College Name</label>
-              <input
-                {...register('college_name')}
-                className="w-full border rounded px-3 py-2"
-              />
+    <DashboardShell>
+      <div className="max-w-2xl mx-auto">
+        <PageHeader title="System Settings" subtitle="Configure system-wide settings" />
+
+        {success && (
+          <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 animate-fade-in">
+            Settings updated successfully
+          </div>
+        )}
+
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <Field label="College Name">
+              <input {...register('college_name')} className="input-field" placeholder="e.g., Visvesvaraya Technological University" />
+            </Field>
+            <Field label="College Address">
+              <textarea {...register('college_address')} rows={3} className="input-field resize-none" placeholder="Enter college address..." />
+            </Field>
+            <Field label="Contact Email">
+              <input type="email" {...register('contact_email')} className="input-field" placeholder="admin@college.edu" />
+            </Field>
+            <Field label="Contact Phone">
+              <input {...register('contact_phone')} className="input-field" placeholder="e.g., +91 9876543210" />
+            </Field>
+            <div className="pt-2">
+              <button type="submit" disabled={isSubmitting} className="btn-primary py-2.5 disabled:opacity-50">
+                {isSubmitting ? 'Saving...' : 'Save Settings'}
+              </button>
             </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">College Address</label>
-              <textarea
-                {...register('college_address')}
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">Contact Email</label>
-              <input
-                type="email"
-                {...register('contact_email')}
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">Contact Phone</label>
-              <input
-                {...register('contact_phone')}
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              {loading ? 'Saving...' : 'Save Settings'}
-            </button>
           </form>
-        </main>
+        </div>
       </div>
-    </div>
+    </DashboardShell>
   )
 }
 

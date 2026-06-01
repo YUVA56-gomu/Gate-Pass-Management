@@ -1,328 +1,189 @@
 import { useState, useEffect } from 'react'
-import Navbar from '../../components/common/Navbar'
-import Sidebar from '../../components/common/Sidebar'
-import Notification from '../../components/common/Notification'
+import { DashboardShell } from '../../components/layouts/DashboardShell'
+import { PageHeader } from '../../components/ui/PageHeader'
 import {
-  getNotifications,
-  getUnreadCount,
-  markAsRead,
-  markAllAsRead,
-  deleteNotification,
-  deleteAllNotifications
+  getNotifications, getUnreadCount, markAsRead,
+  markAllAsRead, deleteNotification, deleteAllNotifications
 } from '../../api/notification.api'
 
-function Notifications() {
+const TYPE_CONFIG = {
+  PASS_SUBMITTED:       { icon: '📝', cls: 'bg-blue-50 border-blue-200',    dot: 'bg-blue-500'    },
+  COORDINATOR_APPROVED: { icon: '✅', cls: 'bg-emerald-50 border-emerald-200', dot: 'bg-emerald-500' },
+  HOSTEL_APPROVED:      { icon: '✅', cls: 'bg-emerald-50 border-emerald-200', dot: 'bg-emerald-500' },
+  COORDINATOR_REJECTED: { icon: '❌', cls: 'bg-red-50 border-red-200',      dot: 'bg-red-500'     },
+  HOSTEL_REJECTED:      { icon: '❌', cls: 'bg-red-50 border-red-200',      dot: 'bg-red-500'     },
+  QR_GENERATED:         { icon: '📱', cls: 'bg-violet-50 border-violet-200', dot: 'bg-violet-500'  },
+  PASS_COMPLETED:       { icon: '🎉', cls: 'bg-amber-50 border-amber-200',  dot: 'bg-amber-500'   },
+  NEW_REQUEST:          { icon: '📬', cls: 'bg-orange-50 border-orange-200', dot: 'bg-orange-500'  },
+  SYSTEM:               { icon: 'ℹ️', cls: 'bg-slate-50 border-slate-200',  dot: 'bg-slate-400'   },
+}
+
+function getConfig(type) {
+  return TYPE_CONFIG[type] || { icon: '🔔', cls: 'bg-slate-50 border-slate-200', dot: 'bg-slate-400' }
+}
+
+export function Notifications() {
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
-  const [filter, setFilter] = useState('all') // all, unread
-  const [limit] = useState(20)
+  const [filter, setFilter] = useState('all')
   const [offset, setOffset] = useState(0)
+  const LIMIT = 20
 
-  // Correction 10: Auto-refresh every 60 seconds
   useEffect(() => {
-    loadNotifications()
-    loadUnreadCount()
-
-    // Set up auto-refresh interval
-    const refreshInterval = setInterval(() => {
-      loadNotifications()
-      loadUnreadCount()
-    }, 60000) // 60 seconds
-
-    // Cleanup interval on unmount
-    return () => clearInterval(refreshInterval)
+    load(); loadCount()
+    const interval = setInterval(() => { load(); loadCount() }, 60000)
+    return () => clearInterval(interval)
   }, [filter, offset])
 
-  const loadNotifications = async () => {
+  useEffect(() => {
+    if (success) { const t = setTimeout(() => setSuccess(null), 3000); return () => clearTimeout(t) }
+  }, [success])
+
+  const load = async () => {
     try {
-      setLoading(true)
-      setError(null)
-
-      const response = await getNotifications(limit, offset, filter === 'unread')
-      if (response.success) {
-        setNotifications(response.data)
-      } else {
-        setError(response.message)
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to load notifications')
-    } finally {
-      setLoading(false)
-    }
+      setLoading(true); setError(null)
+      const res = await getNotifications(LIMIT, offset, filter === 'unread')
+      if (res.success) setNotifications(res.data)
+      else setError(res.message)
+    } catch (err) { setError(err.message || 'Failed to load notifications') }
+    finally { setLoading(false) }
   }
 
-  const loadUnreadCount = async () => {
+  const loadCount = async () => {
     try {
-      const response = await getUnreadCount()
-      if (response.success) {
-        setUnreadCount(response.data.unreadCount)
-      }
-    } catch (err) {
-      console.error('Failed to load unread count:', err)
-    }
+      const res = await getUnreadCount()
+      if (res.success) setUnreadCount(res.data.unreadCount)
+    } catch { /* silent */ }
   }
 
-  const handleMarkAsRead = async (notificationId) => {
+  const handleMarkRead = async (id) => {
     try {
-      setError(null)
-      const response = await markAsRead(notificationId)
-      if (response.success) {
-        setSuccess('Notification marked as read')
-        loadNotifications()
-        loadUnreadCount()
-      } else {
-        setError(response.message)
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to mark notification as read')
-    }
+      await markAsRead(id); setSuccess('Marked as read'); load(); loadCount()
+    } catch (err) { setError(err.message) }
   }
 
-  const handleMarkAllAsRead = async () => {
+  const handleMarkAllRead = async () => {
     try {
-      setError(null)
-      const response = await markAllAsRead()
-      if (response.success) {
-        setSuccess('All notifications marked as read')
-        loadNotifications()
-        loadUnreadCount()
-      } else {
-        setError(response.message)
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to mark all notifications as read')
-    }
+      await markAllAsRead(); setSuccess('All marked as read'); load(); loadCount()
+    } catch (err) { setError(err.message) }
   }
 
-  const handleDeleteNotification = async (notificationId) => {
+  const handleDelete = async (id) => {
     try {
-      setError(null)
-      const response = await deleteNotification(notificationId)
-      if (response.success) {
-        setSuccess('Notification deleted')
-        loadNotifications()
-        loadUnreadCount()
-      } else {
-        setError(response.message)
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to delete notification')
-    }
+      await deleteNotification(id); setSuccess('Deleted'); load(); loadCount()
+    } catch (err) { setError(err.message) }
   }
 
-  const handleDeleteAllNotifications = async () => {
-    if (window.confirm('Are you sure you want to delete all notifications?')) {
-      try {
-        setError(null)
-        const response = await deleteAllNotifications()
-        if (response.success) {
-          setSuccess('All notifications deleted')
-          loadNotifications()
-          loadUnreadCount()
-        } else {
-          setError(response.message)
-        }
-      } catch (err) {
-        setError(err.message || 'Failed to delete all notifications')
-      }
-    }
-  }
-
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case 'PASS_SUBMITTED':
-        return '📝'
-      case 'COORDINATOR_APPROVED':
-      case 'HOSTEL_APPROVED':
-        return '✅'
-      case 'COORDINATOR_REJECTED':
-      case 'HOSTEL_REJECTED':
-        return '❌'
-      case 'QR_GENERATED':
-        return '📱'
-      case 'PASS_COMPLETED':
-        return '🎉'
-      case 'NEW_REQUEST':
-        return '📬'
-      case 'SYSTEM':
-        return 'ℹ️'
-      default:
-        return '🔔'
-    }
-  }
-
-  const getNotificationColor = (type) => {
-    switch (type) {
-      case 'PASS_SUBMITTED':
-        return 'bg-blue-50 border-blue-200'
-      case 'COORDINATOR_APPROVED':
-      case 'HOSTEL_APPROVED':
-        return 'bg-green-50 border-green-200'
-      case 'COORDINATOR_REJECTED':
-      case 'HOSTEL_REJECTED':
-        return 'bg-red-50 border-red-200'
-      case 'QR_GENERATED':
-        return 'bg-purple-50 border-purple-200'
-      case 'PASS_COMPLETED':
-        return 'bg-yellow-50 border-yellow-200'
-      case 'NEW_REQUEST':
-        return 'bg-orange-50 border-orange-200'
-      case 'SYSTEM':
-        return 'bg-gray-50 border-gray-200'
-      default:
-        return 'bg-gray-50 border-gray-200'
-    }
+  const handleDeleteAll = async () => {
+    if (!window.confirm('Delete all notifications?')) return
+    try {
+      await deleteAllNotifications(); setSuccess('All deleted'); load(); loadCount()
+    } catch (err) { setError(err.message) }
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <Navbar />
-        <div className="flex-1 overflow-auto p-6">
-          {error && <Notification type="error" message={error} />}
-          {success && <Notification type="success" message={success} />}
-
-          <div className="mb-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-800">Notifications</h1>
-                <p className="text-gray-600 mt-2">
-                  You have <span className="font-bold text-blue-600">{unreadCount}</span> unread notifications
-                </p>
-              </div>
-              <div className="flex gap-2">
-                {unreadCount > 0 && (
-                  <button
-                    onClick={handleMarkAllAsRead}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
-                  >
-                    Mark All as Read
-                  </button>
-                )}
-                {notifications.length > 0 && (
-                  <button
-                    onClick={handleDeleteAllNotifications}
-                    className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
-                  >
-                    Delete All
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Filter Tabs */}
-          <div className="mb-6 flex gap-2 bg-white rounded-lg shadow p-2">
-            <button
-              onClick={() => {
-                setFilter('all')
-                setOffset(0)
-              }}
-              className={`px-4 py-2 rounded font-medium transition duration-200 ${
-                filter === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              All Notifications
-            </button>
-            <button
-              onClick={() => {
-                setFilter('unread')
-                setOffset(0)
-              }}
-              className={`px-4 py-2 rounded font-medium transition duration-200 ${
-                filter === 'unread'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Unread ({unreadCount})
-            </button>
-          </div>
-
-          {/* Notifications List */}
-          {loading ? (
-            <div className="flex items-center justify-center p-8">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading notifications...</p>
-              </div>
-            </div>
-          ) : notifications.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <p className="text-gray-600 text-lg">No notifications yet</p>
-              <p className="text-gray-500 mt-2">You'll see notifications here when you have updates</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {notifications.map(notification => (
-                <div
-                  key={notification.id}
-                  className={`border-l-4 rounded-lg p-4 flex justify-between items-start ${getNotificationColor(
-                    notification.type
-                  )}`}
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-2xl">{getNotificationIcon(notification.type)}</span>
-                      <h3 className="font-bold text-gray-800">{notification.title}</h3>
-                      {!notification.is_read && (
-                        <span className="inline-block w-2 h-2 bg-blue-600 rounded-full"></span>
-                      )}
-                    </div>
-                    <p className="text-gray-700 mb-2">{notification.message}</p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(notification.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="flex gap-2 ml-4">
-                    {!notification.is_read && (
-                      <button
-                        onClick={() => handleMarkAsRead(notification.id)}
-                        className="text-blue-600 hover:text-blue-800 font-medium text-sm"
-                      >
-                        Mark as Read
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleDeleteNotification(notification.id)}
-                      className="text-red-600 hover:text-red-800 font-medium text-sm"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Pagination */}
-          {notifications.length > 0 && (
-            <div className="mt-6 flex justify-center gap-2">
-              <button
-                onClick={() => setOffset(Math.max(0, offset - limit))}
-                disabled={offset === 0}
-                className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
-              >
-                Previous
+    <DashboardShell>
+      <PageHeader
+        title="Notifications"
+        subtitle={`${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}`}
+        actions={
+          <div className="flex gap-2">
+            {unreadCount > 0 && (
+              <button onClick={handleMarkAllRead} className="btn-secondary text-sm py-2">
+                Mark all read
               </button>
-              <button
-                onClick={() => setOffset(offset + limit)}
-                disabled={notifications.length < limit}
-                className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
-              >
-                Next
+            )}
+            {notifications.length > 0 && (
+              <button onClick={handleDeleteAll}
+                className="btn-ghost text-sm py-2 text-red-600 hover:bg-red-50 border border-red-200 rounded-xl px-3">
+                Delete all
               </button>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        }
+      />
+
+      {error && <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>}
+      {success && <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700">{success}</div>}
+
+      {/* Filter */}
+      <div className="flex gap-1 mb-5 bg-white rounded-xl border border-slate-200/80 p-1 w-fit shadow-sm">
+        {[['all', 'All'], ['unread', `Unread (${unreadCount})`]].map(([val, label]) => (
+          <button key={val} onClick={() => { setFilter(val); setOffset(0) }}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              filter === val ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
+            }`}>
+            {label}
+          </button>
+        ))}
       </div>
-    </div>
+
+      {/* List */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16"><div className="spinner" /></div>
+      ) : notifications.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+          <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3 text-2xl">🔔</div>
+          <p className="font-semibold text-slate-700">No notifications</p>
+          <p className="text-sm text-slate-400 mt-1">You'll see updates here when they arrive</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {notifications.map(n => {
+            const cfg = getConfig(n.type)
+            return (
+              <div key={n.id}
+                className={`flex items-start gap-4 p-4 rounded-2xl border ${cfg.cls} ${!n.is_read ? 'ring-1 ring-inset ring-slate-200' : ''} transition-all animate-fade-in`}>
+                <div className="relative flex-shrink-0">
+                  <span className="text-xl">{cfg.icon}</span>
+                  {!n.is_read && (
+                    <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${cfg.dot} border-2 border-white`} />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-semibold text-slate-800 text-sm">{n.title}</p>
+                    <span className="text-xs text-slate-400 flex-shrink-0">
+                      {new Date(n.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-600 mt-0.5">{n.message}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {!n.is_read && (
+                    <button onClick={() => handleMarkRead(n.id)}
+                      className="text-xs text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap">
+                      Mark read
+                    </button>
+                  )}
+                  <button onClick={() => handleDelete(n.id)}
+                    className="text-xs text-red-500 hover:text-red-700 font-medium">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {notifications.length > 0 && (
+        <div className="flex justify-center gap-3 mt-6">
+          <button onClick={() => setOffset(Math.max(0, offset - LIMIT))} disabled={offset === 0}
+            className="btn-secondary text-sm py-2 disabled:opacity-40">
+            ← Previous
+          </button>
+          <button onClick={() => setOffset(offset + LIMIT)} disabled={notifications.length < LIMIT}
+            className="btn-secondary text-sm py-2 disabled:opacity-40">
+            Next →
+          </button>
+        </div>
+      )}
+    </DashboardShell>
   )
 }
 

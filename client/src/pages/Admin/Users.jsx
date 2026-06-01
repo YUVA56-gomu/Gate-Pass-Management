@@ -11,6 +11,8 @@ function Users() {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [selectedUser, setSelectedUser] = useState(null)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -46,22 +48,55 @@ function Users() {
       setError(null)
       setSuccess(null)
 
-      if (!formData.name || !formData.email || !formData.password || !formData.role) {
-        setError('All fields are required')
+      // Validation
+      if (!formData.name || !formData.name.trim()) {
+        setError('Name is required')
         return
       }
 
+      if (!formData.email || !formData.email.trim()) {
+        setError('Email is required')
+        return
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        setError('Invalid email format')
+        return
+      }
+
+      if (!formData.password || !formData.password.trim()) {
+        setError('Password is required')
+        return
+      }
+
+      if (formData.password.length < 8) {
+        setError('Password must be at least 8 characters')
+        return
+      }
+
+      if (!formData.role) {
+        setError('Role is required')
+        return
+      }
+
+      console.log('[ADMIN] Creating user with data:', formData)
+
       const response = await createUser(formData)
+      
+      console.log('[ADMIN] Create user response:', response)
+
       if (response.success) {
         setSuccess('User created successfully')
         setFormData({ name: '', email: '', password: '', role: 'COORDINATOR', phone: '' })
         setShowCreateModal(false)
-        fetchUsers()
+        // Refresh user list immediately
+        await fetchUsers()
       } else {
         setError(response.message || 'Failed to create user')
       }
     } catch (err) {
-      setError(err.message || 'Failed to create user')
+      console.error('[ADMIN] Create user error:', err)
+      setError(err.message || err.response?.data?.message || 'Failed to create user')
     }
   }
 
@@ -92,6 +127,30 @@ function Users() {
       }
     } catch (err) {
       setError(err.message || 'Failed to deactivate user')
+    }
+  }
+
+  const handleDeleteClick = (user) => {
+    setSelectedUser(user)
+    setShowDeleteModal(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!selectedUser) return
+
+    try {
+      setError(null)
+      const response = await deactivateUser(selectedUser.id)
+      if (response.success) {
+        setSuccess('User deleted successfully')
+        setShowDeleteModal(false)
+        setSelectedUser(null)
+        fetchUsers()
+      } else {
+        setError(response.message || 'Failed to delete user')
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to delete user')
     }
   }
 
@@ -235,6 +294,12 @@ function Users() {
                           >
                             Reset Password
                           </button>
+                          <button
+                            onClick={() => handleDeleteClick(user)}
+                            className="text-red-600 hover:text-red-900 font-medium"
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -261,44 +326,49 @@ function Users() {
 
                 <form onSubmit={handleCreateUser} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Full name"
+                      required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
                     <input
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Email address"
+                      required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
                     <input
                       type="password"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Password"
+                      placeholder="Minimum 8 characters"
+                      required
                     />
+                    <p className="text-xs text-gray-500 mt-1">Must be at least 8 characters with uppercase, lowercase, and number</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
                     <select
                       value={formData.role}
                       onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
                     >
                       <option value="COORDINATOR">Coordinator</option>
                       <option value="HOSTEL_STAFF">Hostel Staff</option>
@@ -323,17 +393,58 @@ function Users() {
                       type="submit"
                       className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
                     >
-                      Create
+                      Create User
                     </button>
                     <button
                       type="button"
-                      onClick={() => setShowCreateModal(false)}
+                      onClick={() => {
+                        setShowCreateModal(false)
+                        setFormData({ name: '', email: '', password: '', role: 'COORDINATOR', phone: '' })
+                      }}
                       className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-200"
                     >
                       Cancel
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* Delete Confirmation Modal */}
+          {showDeleteModal && selectedUser && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">Confirm Delete</h3>
+                </div>
+
+                <p className="text-gray-700 mb-6">
+                  Are you sure you want to delete user <strong>{selectedUser.name}</strong>? This action cannot be undone.
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowDeleteModal(false)
+                      setSelectedUser(null)
+                    }}
+                    className="flex-1 px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold rounded-lg transition duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="flex-1 px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition duration-200"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
           )}

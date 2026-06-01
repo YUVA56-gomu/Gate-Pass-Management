@@ -95,7 +95,7 @@ export const generateQRCode = async (token) => {
       type: 'image/png',
       quality: 0.95,
       margin: 1,
-      width: 300
+      width: 400
     })
 
     return qrImage
@@ -125,7 +125,7 @@ export const generateQRCodeBuffer = async (token) => {
       type: 'image/png',
       quality: 0.95,
       margin: 1,
-      width: 300
+      width: 400
     })
 
     return qrBuffer

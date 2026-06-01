@@ -1,168 +1,92 @@
 import { useState, useEffect } from 'react'
-import Navbar from '../../components/common/Navbar'
-import Sidebar from '../../components/common/Sidebar'
-import Notification from '../../components/common/Notification'
 import { getAllLogs } from '../../api/security.api'
+import { DashboardShell } from '../../components/layouts/DashboardShell'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { DataTable } from '../../components/ui/DataTable'
+import { StatsCard } from '../../components/ui/StatsCard'
 
-function ScanLogs() {
+function fmtDT(d) {
+  if (!d) return '—'
+  return new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
+
+const FILTERS = ['ALL', 'OUT', 'IN', 'TODAY']
+
+const COLUMNS = [
+  { key: 'studentName', label: 'Student', render: (val, row) => (
+    <div>
+      <p className="font-medium text-slate-800">{val || '—'}</p>
+      <p className="text-xs text-slate-400 font-mono">{row.studentUSN || ''}</p>
+    </div>
+  )},
+  { key: 'passType', label: 'Pass Type', render: (val) => (
+    <span className={`badge ${val === 'DAILY' ? 'badge-info' : 'badge-purple'}`}>{val}</span>
+  )},
+  { key: 'action', label: 'Action', render: (val) => (
+    <span className={`badge ${val === 'OUT' ? 'badge-warning' : 'badge-success'}`}>{val}</span>
+  )},
+  { key: 'scannedAt', label: 'Timestamp', render: (val) => <span className="text-sm text-slate-500">{fmtDT(val)}</span> },
+  { key: 'scannedBy', label: 'Security Staff', render: (val) => <span className="text-sm text-slate-600">{val || '—'}</span> },
+]
+
+export function ScanLogs() {
   const [logs, setLogs] = useState([])
   const [filter, setFilter] = useState('ALL')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    fetchLogs()
+    const fetch = async () => {
+      try { setLoading(true); setError(null); const r = await getAllLogs(filter); if (r.success) setLogs(r.data); else setError(r.message) }
+      catch (err) { setError(err.message || 'Failed to load logs') }
+      finally { setLoading(false) }
+    }
+    fetch()
   }, [filter])
 
-  const fetchLogs = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const response = await getAllLogs(filter)
-      if (response.success) {
-        setLogs(response.data)
-      } else {
-        setError(response.message || 'Failed to load logs')
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to load logs')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const formatDateTime = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
-  }
+  const outCount = logs.filter(l => l.action === 'OUT').length
+  const inCount  = logs.filter(l => l.action === 'IN').length
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <Navbar />
-        <div className="flex-1 overflow-auto p-6">
-          {error && <Notification type="error" message={error} />}
+    <DashboardShell>
+      <PageHeader title="Scan Logs" subtitle="All gate entry and exit records" />
 
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-800">Scan Logs</h1>
-            <p className="text-gray-600 mt-2">View all gate entry/exit logs</p>
-          </div>
+      {error && <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>}
 
-          {/* Filter Buttons */}
-          <div className="mb-6 flex gap-2 flex-wrap">
-            {['ALL', 'OUT', 'IN', 'TODAY'].map((filterOption) => (
-              <button
-                key={filterOption}
-                onClick={() => setFilter(filterOption)}
-                className={`px-4 py-2 rounded-lg font-medium transition duration-200 ${
-                  filter === filterOption
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                {filterOption}
-              </button>
-            ))}
-          </div>
-
-          {/* Logs Table */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            {loading ? (
-              <div className="flex items-center justify-center p-8">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading logs...</p>
-                </div>
-              </div>
-            ) : logs.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Student Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">USN</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Pass Type</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Action</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Timestamp</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Security Staff</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {logs.map((log) => (
-                      <tr key={log.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{log.studentName}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{log.studentUSN}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            log.passType === 'DAILY'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-purple-100 text-purple-800'
-                          }`}>
-                            {log.passType}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            log.action === 'OUT'
-                              ? 'bg-orange-100 text-orange-800'
-                              : 'bg-green-100 text-green-800'
-                          }`}>
-                            {log.action}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {formatDateTime(log.scannedAt)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{log.scannedBy}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center p-8">
-                <div className="text-center">
-                  <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <p className="text-gray-600">No logs found</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Summary */}
-          {logs.length > 0 && (
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white rounded-lg shadow p-4">
-                <p className="text-gray-600 text-sm">Total Logs</p>
-                <p className="text-2xl font-bold text-gray-900">{logs.length}</p>
-              </div>
-              <div className="bg-white rounded-lg shadow p-4">
-                <p className="text-gray-600 text-sm">OUT Scans</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {logs.filter(log => log.action === 'OUT').length}
-                </p>
-              </div>
-              <div className="bg-white rounded-lg shadow p-4">
-                <p className="text-gray-600 text-sm">IN Scans</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {logs.filter(log => log.action === 'IN').length}
-                </p>
-              </div>
-            </div>
-          )}
+      {/* Summary */}
+      {!loading && logs.length > 0 && (
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <StatsCard label="Total Logs" value={logs.length} color="blue"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>}
+          />
+          <StatsCard label="OUT Scans" value={outCount} color="orange"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" /></svg>}
+          />
+          <StatsCard label="IN Scans" value={inCount} color="emerald"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M7 16l-4-4m0 0l4-4m-4 4h18" /></svg>}
+          />
         </div>
+      )}
+
+      {/* Filter */}
+      <div className="flex gap-1 mb-5 bg-white rounded-xl border border-slate-200/80 p-1 w-fit shadow-sm">
+        {FILTERS.map(f => (
+          <button key={f} onClick={() => setFilter(f)}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              filter === f ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
+            }`}>
+            {f}
+          </button>
+        ))}
       </div>
-    </div>
+
+      <DataTable
+        columns={COLUMNS}
+        data={logs}
+        loading={loading}
+        empty="No scan logs found"
+      />
+    </DashboardShell>
   )
 }
 

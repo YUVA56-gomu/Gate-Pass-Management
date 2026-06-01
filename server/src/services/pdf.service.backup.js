@@ -461,23 +461,23 @@ const buildDailyPassPDF = (doc, pass, approvals, qrImageBuffer) => {
   
   doc.save()
   // Section header with blue background
-  doc.roundedRect(leftColX, y, leftColWidth, 22, 3).fill(COLORS.primary)
-  doc.fillColor('#ffffff').fontSize(9.5).font('Helvetica-Bold')
-     .text('STUDENT INFORMATION', leftColX + 12, y + 7)
+  doc.roundedRect(leftColX, y, leftColWidth, 20, 3).fill(COLORS.primary)
+  doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold')
+     .text('👤  STUDENT INFORMATION', leftColX + 10, y + 6)
   
   // Info box
-  const studentBoxY = y + 22
-  const studentBoxHeight = 230
+  const studentBoxY = y + 20
+  const studentBoxHeight = 220
   doc.roundedRect(leftColX, studentBoxY, leftColWidth, studentBoxHeight, 4).fill('#ffffff')
   doc.roundedRect(leftColX, studentBoxY, leftColWidth, studentBoxHeight, 4).stroke(COLORS.borderLight).lineWidth(1)
   
-  let infoY = studentBoxY + 16
-  const labelX = leftColX + 18
-  const valueX = leftColX + 115
-  const lineHeight = 24
+  let infoY = studentBoxY + 14
+  const labelX = leftColX + 15
+  const valueX = leftColX + 110
+  const lineHeight = 22
   
   const studentInfo = [
-    ['Full Name', u?.name || 'N/A'],
+    ['Student Name', u?.name || 'N/A'],
     ['USN', s?.usn || 'N/A'],
     ['Department', dept?.name || 'N/A'],
     ['Program', 'Undergraduate'],
@@ -485,14 +485,14 @@ const buildDailyPassPDF = (doc, pass, approvals, qrImageBuffer) => {
     ['Hostel Name', s?.hostel_name || 'N/A'],
     ['Room Number', s?.room_number || 'N/A'],
     ['Email', u?.email || 'N/A'],
-    ['Phone', u?.phone || 'N/A']
+    ['Phone Number', u?.phone || 'N/A']
   ]
   
   studentInfo.forEach(([label, value]) => {
-    doc.fillColor(COLORS.textMuted).fontSize(8.5).font('Helvetica')
+    doc.fillColor(COLORS.textMuted).fontSize(8).font('Helvetica')
        .text(label, labelX, infoY)
-    doc.fillColor(COLORS.textDark).fontSize(9.5).font('Helvetica-Bold')
-       .text(String(value), valueX, infoY, { width: leftColWidth - 125, ellipsis: true })
+    doc.fillColor(COLORS.textDark).fontSize(9).font('Helvetica-Bold')
+       .text(String(value), valueX, infoY, { width: leftColWidth - 120, ellipsis: true })
     infoY += lineHeight
   })
   
@@ -504,71 +504,63 @@ const buildDailyPassPDF = (doc, pass, approvals, qrImageBuffer) => {
   
   doc.save()
   // Section header with blue background
-  doc.roundedRect(rightColX, y, rightColWidth, 22, 3).fill(COLORS.primary)
-  doc.fillColor('#ffffff').fontSize(9.5).font('Helvetica-Bold')
-     .text('SCAN AT SECURITY GATE', rightColX + 12, y + 7)
+  doc.roundedRect(rightColX, y, rightColWidth, 20, 3).fill(COLORS.primary)
+  doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold')
+     .text('🛡️  SCAN AT SECURITY GATE', rightColX + 10, y + 6)
   
   // QR box
-  const qrBoxY = y + 22
-  const qrBoxHeight = 230
+  const qrBoxY = y + 20
+  const qrBoxHeight = 220
   doc.roundedRect(rightColX, qrBoxY, rightColWidth, qrBoxHeight, 4).fill('#ffffff')
   doc.roundedRect(rightColX, qrBoxY, rightColWidth, qrBoxHeight, 4).stroke(COLORS.borderLight).lineWidth(1)
   
   // Large QR Code (centered)
-  const qrSize = 150
+  const qrSize = 140
   const qrX = rightColX + (rightColWidth - qrSize) / 2
-  const qrY = qrBoxY + 10
+  const qrY = qrBoxY + 8
   doc.image(qrImageBuffer, qrX, qrY, { width: qrSize, height: qrSize })
   
   // "SCAN TO VERIFY" label
-  doc.fillColor(COLORS.success).fontSize(9.5).font('Helvetica-Bold')
-     .text('SCAN TO VERIFY', rightColX, qrY + qrSize + 6, { align: 'center', width: rightColWidth })
-  doc.fillColor(COLORS.textMuted).fontSize(8).font('Helvetica')
-     .text('Show this QR code to the security', rightColX, qrY + qrSize + 19, { align: 'center', width: rightColWidth })
-  doc.fillColor(COLORS.textMuted).fontSize(8).font('Helvetica')
-     .text('personnel for verification.', rightColX, qrY + qrSize + 30, { align: 'center', width: rightColWidth })
+  doc.fillColor(COLORS.success).fontSize(9).font('Helvetica-Bold')
+     .text('✓ SCAN TO VERIFY', rightColX, qrY + qrSize + 4, { align: 'center', width: rightColWidth })
+  doc.fillColor(COLORS.textMuted).fontSize(7.5).font('Helvetica')
+     .text('Show this QR code to the security', rightColX, qrY + qrSize + 16, { align: 'center', width: rightColWidth })
+  doc.fillColor(COLORS.textMuted).fontSize(7.5).font('Helvetica')
+     .text('personnel for verification.', rightColX, qrY + qrSize + 26, { align: 'center', width: rightColWidth })
   
   // QR Details box with green background
-  const qrDetailsY = qrY + qrSize + 44
-  doc.roundedRect(rightColX + 10, qrDetailsY, rightColWidth - 20, 52, 3).fill(COLORS.successBg)
-  doc.roundedRect(rightColX + 10, qrDetailsY, rightColWidth - 20, 52, 3).stroke(COLORS.success).lineWidth(0.5)
+  const qrDetailsY = qrY + qrSize + 38
+  doc.roundedRect(rightColX + 8, qrDetailsY, rightColWidth - 16, 48, 3).fill(COLORS.successBg)
+  doc.roundedRect(rightColX + 8, qrDetailsY, rightColWidth - 16, 48, 3).stroke(COLORS.success).lineWidth(0.5)
   
-  let qrInfoY = qrDetailsY + 8
-  const qrLabelX = rightColX + 18
-  const qrValueX = rightColX + 80
+  doc.fillColor(COLORS.textMuted).fontSize(7).font('Helvetica')
+     .text(`Pass ID`, rightColX + 15, qrDetailsY + 5)
+  doc.fillColor(COLORS.textDark).fontSize(7.5).font('Helvetica-Bold')
+     .text(`: #${pass.id}`, rightColX + 70, qrDetailsY + 5)
   
-  doc.fillColor(COLORS.textMuted).fontSize(7.5).font('Helvetica')
-     .text('Pass ID', qrLabelX, qrInfoY)
-  doc.fillColor(COLORS.textDark).fontSize(8).font('Helvetica-Bold')
-     .text(`: #${pass.id}`, qrValueX, qrInfoY)
+  doc.fillColor(COLORS.textMuted).fontSize(7).font('Helvetica')
+     .text(`Student Name`, rightColX + 15, qrDetailsY + 14)
+  doc.fillColor(COLORS.textDark).fontSize(7.5).font('Helvetica-Bold')
+     .text(`: ${u?.name || 'N/A'}`, rightColX + 70, qrDetailsY + 14, { width: rightColWidth - 85, ellipsis: true })
   
-  qrInfoY += 10
-  doc.fillColor(COLORS.textMuted).fontSize(7.5).font('Helvetica')
-     .text('Student Name', qrLabelX, qrInfoY)
-  doc.fillColor(COLORS.textDark).fontSize(8).font('Helvetica-Bold')
-     .text(`: ${u?.name || 'N/A'}`, qrValueX, qrInfoY, { width: rightColWidth - 100, ellipsis: true })
+  doc.fillColor(COLORS.textMuted).fontSize(7).font('Helvetica')
+     .text(`USN`, rightColX + 15, qrDetailsY + 23)
+  doc.fillColor(COLORS.textDark).fontSize(7.5).font('Helvetica-Bold')
+     .text(`: ${s?.usn || 'N/A'}`, rightColX + 70, qrDetailsY + 23)
   
-  qrInfoY += 10
-  doc.fillColor(COLORS.textMuted).fontSize(7.5).font('Helvetica')
-     .text('USN', qrLabelX, qrInfoY)
-  doc.fillColor(COLORS.textDark).fontSize(8).font('Helvetica-Bold')
-     .text(`: ${s?.usn || 'N/A'}`, qrValueX, qrInfoY)
+  doc.fillColor(COLORS.textMuted).fontSize(7).font('Helvetica')
+     .text(`Pass Type`, rightColX + 15, qrDetailsY + 32)
+  doc.fillColor(COLORS.textDark).fontSize(7.5).font('Helvetica-Bold')
+     .text(`: Daily Pass`, rightColX + 70, qrDetailsY + 32)
   
-  qrInfoY += 10
-  doc.fillColor(COLORS.textMuted).fontSize(7.5).font('Helvetica')
-     .text('Pass Type', qrLabelX, qrInfoY)
-  doc.fillColor(COLORS.textDark).fontSize(8).font('Helvetica-Bold')
-     .text(`: Daily Pass`, qrValueX, qrInfoY)
-  
-  qrInfoY += 10
+  doc.fillColor(COLORS.success).fontSize(7).font('Helvetica-Bold')
+     .text(`Status`, rightColX + 15, qrDetailsY + 41)
   doc.fillColor(COLORS.success).fontSize(7.5).font('Helvetica-Bold')
-     .text('Status', qrLabelX, qrInfoY)
-  doc.fillColor(COLORS.success).fontSize(8).font('Helvetica-Bold')
-     .text(`: APPROVED`, qrValueX, qrInfoY)
+     .text(`: APPROVED`, rightColX + 70, qrDetailsY + 41)
   
   doc.restore()
 
-  y += 262
+  y += 250
 
   // ═══════════════════════════════════════════════════════════════════════════
   // DAILY PASS DETAILS
@@ -673,51 +665,51 @@ const buildLongLeavePDF = (doc, pass, approvals, qrImageBuffer) => {
   // ═══════════════════════════════════════════════════════════════════════════
   
   // VTU Logo (top-left)
-  drawCollegeCrest(doc, 40, 30)
+  drawCollegeCrest(doc, 40, 35)
   
   // Title and subtitle
-  doc.fillColor(COLORS.primary).fontSize(20).font('Helvetica-Bold')
-     .text('SMART GATE PASS SYSTEM', 95, 35)
+  doc.fillColor(COLORS.primary).fontSize(18).font('Helvetica-Bold')
+     .text('SMART GATE PASS SYSTEM', 90, 40)
   doc.fillColor(COLORS.textDark).fontSize(11).font('Helvetica-Bold')
-     .text('Official Long Leave Permission Letter', 95, 58)
+     .text('Official Long Leave Permission Letter', 90, 60)
   
   // Generated date and university name
   const generatedDate = fmtDateTime(pass.createdAt || new Date())
   doc.fillColor(COLORS.textMuted).fontSize(8).font('Helvetica')
-     .text(`Generated On: ${generatedDate}  |  Visvesvaraya Technological University, Belagavi`, 95, 73)
+     .text(`📅 Generated On: ${generatedDate}  |  🏛️ Visvesvaraya Technological University, Belagavi`, 90, 75)
   
   // Pass ID and Type (top-right box)
   doc.save()
-  doc.roundedRect(445, 30, 110, 68, 4).fill(COLORS.bgLight)
-  doc.roundedRect(445, 30, 110, 68, 4).stroke(COLORS.borderLight).lineWidth(1)
+  doc.roundedRect(440, 35, 115, 65, 4).fill(COLORS.bgLight)
+  doc.roundedRect(440, 35, 115, 65, 4).stroke(COLORS.borderLight).lineWidth(1)
   
-  doc.fillColor(COLORS.textMuted).fontSize(7.5).font('Helvetica')
-     .text('PASS ID', 455, 38)
-  doc.fillColor(COLORS.primary).fontSize(18).font('Helvetica-Bold')
-     .text(`#${pass.id}`, 455, 48)
-  doc.fillColor(COLORS.textMuted).fontSize(7.5).font('Helvetica')
-     .text('Pass Type', 455, 70)
+  doc.fillColor(COLORS.textMuted).fontSize(7).font('Helvetica')
+     .text('PASS ID', 450, 42)
+  doc.fillColor(COLORS.primary).fontSize(16).font('Helvetica-Bold')
+     .text(`#${pass.id}`, 450, 52)
+  doc.fillColor(COLORS.textMuted).fontSize(7).font('Helvetica')
+     .text('Pass Type', 450, 72)
   doc.fillColor(COLORS.textDark).fontSize(10).font('Helvetica-Bold')
-     .text('LONG LEAVE', 455, 82)
+     .text('LONG LEAVE', 450, 82)
   doc.restore()
 
-  let y = 108
+  let y = 110
 
   // ═══════════════════════════════════════════════════════════════════════════
   // STATUS BANNER
   // ═══════════════════════════════════════════════════════════════════════════
   
   doc.save()
-  doc.roundedRect(40, y, 515, 34, 4).fill(COLORS.successBg)
-  doc.roundedRect(40, y, 515, 34, 4).stroke(COLORS.success).lineWidth(1.5)
+  doc.roundedRect(40, y, 515, 32, 4).fill(COLORS.successBg)
+  doc.roundedRect(40, y, 515, 32, 4).stroke(COLORS.success).lineWidth(1.5)
   
   doc.fillColor(COLORS.success).fontSize(12).font('Helvetica-Bold')
-     .text('APPROVED — LONG LEAVE', 40, y + 7, { align: 'center', width: 515 })
-  doc.fillColor(COLORS.success).fontSize(8.5).font('Helvetica')
-     .text('This pass is approved and valid for the dates mentioned below.', 40, y + 21, { align: 'center', width: 515 })
+     .text('✓ APPROVED — LONG LEAVE', 40, y + 6, { align: 'center', width: 515 })
+  doc.fillColor(COLORS.success).fontSize(8).font('Helvetica')
+     .text('This pass is approved and valid for the dates mentioned below.', 40, y + 20, { align: 'center', width: 515 })
   doc.restore()
 
-  y += 44
+  y += 42
 
   // ═══════════════════════════════════════════════════════════════════════════
   // TWO-COLUMN LAYOUT: STUDENT INFO (LEFT) + QR CODE (RIGHT)
@@ -734,20 +726,20 @@ const buildLongLeavePDF = (doc, pass, approvals, qrImageBuffer) => {
   
   doc.save()
   // Section header with blue background
-  doc.roundedRect(leftColX, y, leftColWidth, 22, 3).fill(COLORS.primary)
-  doc.fillColor('#ffffff').fontSize(9.5).font('Helvetica-Bold')
-     .text('STUDENT INFORMATION', leftColX + 12, y + 7)
+  doc.roundedRect(leftColX, y, leftColWidth, 20, 3).fill(COLORS.primary)
+  doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold')
+     .text('👤  STUDENT INFORMATION', leftColX + 10, y + 6)
   
   // Info box
-  const studentBoxY = y + 22
-  const studentBoxHeight = 230
+  const studentBoxY = y + 20
+  const studentBoxHeight = 220
   doc.roundedRect(leftColX, studentBoxY, leftColWidth, studentBoxHeight, 4).fill('#ffffff')
   doc.roundedRect(leftColX, studentBoxY, leftColWidth, studentBoxHeight, 4).stroke(COLORS.borderLight).lineWidth(1)
   
-  let infoY = studentBoxY + 16
-  const labelX = leftColX + 18
-  const valueX = leftColX + 115
-  const lineHeight = 24
+  let infoY = studentBoxY + 14
+  const labelX = leftColX + 15
+  const valueX = leftColX + 110
+  const lineHeight = 22
   
   const studentInfo = [
     ['Full Name', u?.name || 'N/A'],
@@ -762,10 +754,10 @@ const buildLongLeavePDF = (doc, pass, approvals, qrImageBuffer) => {
   ]
   
   studentInfo.forEach(([label, value]) => {
-    doc.fillColor(COLORS.textMuted).fontSize(8.5).font('Helvetica')
+    doc.fillColor(COLORS.textMuted).fontSize(8).font('Helvetica')
        .text(label, labelX, infoY)
-    doc.fillColor(COLORS.textDark).fontSize(9.5).font('Helvetica-Bold')
-       .text(String(value), valueX, infoY, { width: leftColWidth - 125, ellipsis: true })
+    doc.fillColor(COLORS.textDark).fontSize(9).font('Helvetica-Bold')
+       .text(String(value), valueX, infoY, { width: leftColWidth - 120, ellipsis: true })
     infoY += lineHeight
   })
   
@@ -777,92 +769,83 @@ const buildLongLeavePDF = (doc, pass, approvals, qrImageBuffer) => {
   
   doc.save()
   // Section header with blue background
-  doc.roundedRect(rightColX, y, rightColWidth, 22, 3).fill(COLORS.primary)
-  doc.fillColor('#ffffff').fontSize(9.5).font('Helvetica-Bold')
-     .text('SCAN AT SECURITY GATE', rightColX + 12, y + 7)
+  doc.roundedRect(rightColX, y, rightColWidth, 20, 3).fill(COLORS.primary)
+  doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold')
+     .text('🛡️  SCAN AT SECURITY GATE', rightColX + 10, y + 6)
   
   // QR box
-  const qrBoxY = y + 22
-  const qrBoxHeight = 230
+  const qrBoxY = y + 20
+  const qrBoxHeight = 220
   doc.roundedRect(rightColX, qrBoxY, rightColWidth, qrBoxHeight, 4).fill('#ffffff')
   doc.roundedRect(rightColX, qrBoxY, rightColWidth, qrBoxHeight, 4).stroke(COLORS.borderLight).lineWidth(1)
   
   // Large QR Code (centered)
-  const qrSize = 150
+  const qrSize = 140
   const qrX = rightColX + (rightColWidth - qrSize) / 2
-  const qrY = qrBoxY + 10
+  const qrY = qrBoxY + 8
   doc.image(qrImageBuffer, qrX, qrY, { width: qrSize, height: qrSize })
   
   // "SCAN TO VERIFY" label
-  doc.fillColor(COLORS.success).fontSize(9.5).font('Helvetica-Bold')
-     .text('SCAN TO VERIFY', rightColX, qrY + qrSize + 6, { align: 'center', width: rightColWidth })
-  doc.fillColor(COLORS.textMuted).fontSize(8).font('Helvetica')
-     .text('Show this QR code to the security', rightColX, qrY + qrSize + 19, { align: 'center', width: rightColWidth })
-  doc.fillColor(COLORS.textMuted).fontSize(8).font('Helvetica')
-     .text('personnel for verification.', rightColX, qrY + qrSize + 30, { align: 'center', width: rightColWidth })
+  doc.fillColor(COLORS.success).fontSize(9).font('Helvetica-Bold')
+     .text('✓ SCAN TO VERIFY', rightColX, qrY + qrSize + 4, { align: 'center', width: rightColWidth })
+  doc.fillColor(COLORS.textMuted).fontSize(7.5).font('Helvetica')
+     .text('Show this QR code to the security', rightColX, qrY + qrSize + 16, { align: 'center', width: rightColWidth })
+  doc.fillColor(COLORS.textMuted).fontSize(7.5).font('Helvetica')
+     .text('personnel for verification.', rightColX, qrY + qrSize + 26, { align: 'center', width: rightColWidth })
   
   // QR Details box with green background
-  const qrDetailsY = qrY + qrSize + 44
-  doc.roundedRect(rightColX + 10, qrDetailsY, rightColWidth - 20, 60, 3).fill(COLORS.successBg)
-  doc.roundedRect(rightColX + 10, qrDetailsY, rightColWidth - 20, 60, 3).stroke(COLORS.success).lineWidth(0.5)
+  const qrDetailsY = qrY + qrSize + 38
+  doc.roundedRect(rightColX + 8, qrDetailsY, rightColWidth - 16, 56, 3).fill(COLORS.successBg)
+  doc.roundedRect(rightColX + 8, qrDetailsY, rightColWidth - 16, 56, 3).stroke(COLORS.success).lineWidth(0.5)
   
   const leavingDate = pass.leaving_date || pass.from_date
   const returningDate = pass.returning_date || pass.to_date
   
-  let qrInfoY = qrDetailsY + 8
-  const qrLabelX = rightColX + 18
-  const qrValueX = rightColX + 80
+  doc.fillColor(COLORS.textMuted).fontSize(7).font('Helvetica')
+     .text(`Pass ID`, rightColX + 15, qrDetailsY + 5)
+  doc.fillColor(COLORS.textDark).fontSize(7.5).font('Helvetica-Bold')
+     .text(`: #${pass.id}`, rightColX + 70, qrDetailsY + 5)
   
-  doc.fillColor(COLORS.textMuted).fontSize(7.5).font('Helvetica')
-     .text('Pass ID', qrLabelX, qrInfoY)
-  doc.fillColor(COLORS.textDark).fontSize(8).font('Helvetica-Bold')
-     .text(`: #${pass.id}`, qrValueX, qrInfoY)
+  doc.fillColor(COLORS.textMuted).fontSize(7).font('Helvetica')
+     .text(`Student Name`, rightColX + 15, qrDetailsY + 14)
+  doc.fillColor(COLORS.textDark).fontSize(7.5).font('Helvetica-Bold')
+     .text(`: ${u?.name || 'N/A'}`, rightColX + 70, qrDetailsY + 14, { width: rightColWidth - 85, ellipsis: true })
   
-  qrInfoY += 10
-  doc.fillColor(COLORS.textMuted).fontSize(7.5).font('Helvetica')
-     .text('Student Name', qrLabelX, qrInfoY)
-  doc.fillColor(COLORS.textDark).fontSize(8).font('Helvetica-Bold')
-     .text(`: ${u?.name || 'N/A'}`, qrValueX, qrInfoY, { width: rightColWidth - 100, ellipsis: true })
+  doc.fillColor(COLORS.textMuted).fontSize(7).font('Helvetica')
+     .text(`USN`, rightColX + 15, qrDetailsY + 23)
+  doc.fillColor(COLORS.textDark).fontSize(7.5).font('Helvetica-Bold')
+     .text(`: ${s?.usn || 'N/A'}`, rightColX + 70, qrDetailsY + 23)
   
-  qrInfoY += 10
-  doc.fillColor(COLORS.textMuted).fontSize(7.5).font('Helvetica')
-     .text('USN', qrLabelX, qrInfoY)
-  doc.fillColor(COLORS.textDark).fontSize(8).font('Helvetica-Bold')
-     .text(`: ${s?.usn || 'N/A'}`, qrValueX, qrInfoY)
+  doc.fillColor(COLORS.textMuted).fontSize(7).font('Helvetica')
+     .text(`Pass Type`, rightColX + 15, qrDetailsY + 32)
+  doc.fillColor(COLORS.textDark).fontSize(7.5).font('Helvetica-Bold')
+     .text(`: Long Leave`, rightColX + 70, qrDetailsY + 32)
   
-  qrInfoY += 10
-  doc.fillColor(COLORS.textMuted).fontSize(7.5).font('Helvetica')
-     .text('Pass Type', qrLabelX, qrInfoY)
-  doc.fillColor(COLORS.textDark).fontSize(8).font('Helvetica-Bold')
-     .text(`: Long Leave`, qrValueX, qrInfoY)
+  doc.fillColor(COLORS.textMuted).fontSize(7).font('Helvetica')
+     .text(`Leaving Date`, rightColX + 15, qrDetailsY + 41)
+  doc.fillColor(COLORS.textDark).fontSize(7.5).font('Helvetica-Bold')
+     .text(`: ${fmtDate(leavingDate)}`, rightColX + 70, qrDetailsY + 41)
   
-  qrInfoY += 10
-  doc.fillColor(COLORS.textMuted).fontSize(7.5).font('Helvetica')
-     .text('Leaving Date', qrLabelX, qrInfoY)
-  doc.fillColor(COLORS.textDark).fontSize(8).font('Helvetica-Bold')
-     .text(`: ${fmtDate(leavingDate)}`, qrValueX, qrInfoY)
-  
-  qrInfoY += 10
+  doc.fillColor(COLORS.success).fontSize(7).font('Helvetica-Bold')
+     .text(`Status`, rightColX + 15, qrDetailsY + 50)
   doc.fillColor(COLORS.success).fontSize(7.5).font('Helvetica-Bold')
-     .text('Status', qrLabelX, qrInfoY)
-  doc.fillColor(COLORS.success).fontSize(8).font('Helvetica-Bold')
-     .text(`: APPROVED`, qrValueX, qrInfoY)
+     .text(`: APPROVED`, rightColX + 70, qrDetailsY + 50)
   
   doc.restore()
 
-  y += 262
+  y += 250
 
   // ═══════════════════════════════════════════════════════════════════════════
   // TRAVEL / LEAVE DETAILS
   // ═══════════════════════════════════════════════════════════════════════════
   
   doc.save()
-  doc.roundedRect(40, y, 515, 22, 3).fill(COLORS.primary)
-  doc.fillColor('#ffffff').fontSize(9.5).font('Helvetica-Bold')
-     .text('TRAVEL / LEAVE DETAILS', 50, y + 7)
+  doc.roundedRect(40, y, 515, 20, 3).fill(COLORS.primary)
+  doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold')
+     .text('✈️  TRAVEL / LEAVE DETAILS', 50, y + 6)
   doc.restore()
   
-  y += 22
+  y += 20
   
   let duration = 'N/A'
   if (leavingDate && returningDate) {
@@ -886,12 +869,12 @@ const buildLongLeavePDF = (doc, pass, approvals, qrImageBuffer) => {
   // ═══════════════════════════════════════════════════════════════════════════
   
   doc.save()
-  doc.roundedRect(40, y, 515, 22, 3).fill(COLORS.primary)
-  doc.fillColor('#ffffff').fontSize(9.5).font('Helvetica-Bold')
-     .text('APPROVAL INFORMATION', 50, y + 7)
+  doc.roundedRect(40, y, 515, 20, 3).fill(COLORS.primary)
+  doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold')
+     .text('✅  APPROVAL INFORMATION', 50, y + 6)
   doc.restore()
   
-  y += 22
+  y += 20
   
   // Two approval cards side by side
   doc.save()
@@ -939,12 +922,12 @@ const buildLongLeavePDF = (doc, pass, approvals, qrImageBuffer) => {
   // ═══════════════════════════════════════════════════════════════════════════
   
   doc.save()
-  doc.roundedRect(40, y, 515, 22, 3).fill(COLORS.primary)
-  doc.fillColor('#ffffff').fontSize(9.5).font('Helvetica-Bold')
-     .text('IMPORTANT INSTRUCTIONS', 50, y + 7)
+  doc.roundedRect(40, y, 515, 20, 3).fill(COLORS.primary)
+  doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold')
+     .text('⚠️  IMPORTANT INSTRUCTIONS', 50, y + 6)
   doc.restore()
   
-  y += 22
+  y += 20
   
   doc.save()
   const instructionsHeight = 60
@@ -974,8 +957,8 @@ const buildLongLeavePDF = (doc, pass, approvals, qrImageBuffer) => {
   doc.save()
   doc.moveTo(40, 780).lineTo(555, 780).stroke(COLORS.primary).lineWidth(2)
   
-  doc.fillColor(COLORS.textDark).fontSize(8.5).font('Helvetica-Bold')
-     .text('Visvesvaraya Technological University, Belagavi', 40, 788, { align: 'center', width: 515 })
+  doc.fillColor(COLORS.textDark).fontSize(8).font('Helvetica-Bold')
+     .text('🏛️ Visvesvaraya Technological University, Belagavi', 40, 788, { align: 'center', width: 515 })
   doc.fillColor(COLORS.textMuted).fontSize(7.5).font('Helvetica')
      .text('Smart Gate Pass Management System', 40, 800, { align: 'center', width: 515 })
   doc.fillColor(COLORS.textMuted).fontSize(7).font('Helvetica')
