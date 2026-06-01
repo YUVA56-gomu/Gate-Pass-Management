@@ -110,6 +110,18 @@ export function Dashboard() {
       }
     }
     fetchPasses()
+
+    // Refresh every 30 seconds so status updates appear without manual reload
+    const interval = setInterval(fetchPasses, 30000)
+
+    // Also refresh when the student tabs back to this page
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchPasses() }
+    document.addEventListener('visibilitychange', onVisible)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
 
   const total    = passes.length

@@ -42,7 +42,21 @@ export function MyPasses() {
   const [showQRModal, setShowQRModal] = useState(false)
   const [selectedPassForQR, setSelectedPassForQR] = useState(null)
 
-  useEffect(() => { fetchPasses() }, [])
+  useEffect(() => {
+    fetchPasses()
+
+    // Refresh every 30 seconds so status updates appear without manual reload
+    const interval = setInterval(fetchPasses, 30000)
+
+    // Also refresh when the student tabs back to this page
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchPasses() }
+    document.addEventListener('visibilitychange', onVisible)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [])
   useEffect(() => {
     if (success) { const t = setTimeout(() => setSuccess(''), 4000); return () => clearTimeout(t) }
   }, [success])
@@ -106,12 +120,21 @@ export function MyPasses() {
         title="My Passes"
         subtitle="View and manage your gate passes"
         actions={
-          <button onClick={() => navigate('/student/apply-pass')} className="btn-primary">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Apply New Pass
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={fetchPasses} disabled={loading}
+              className="btn-secondary text-sm py-2 flex items-center gap-1.5 disabled:opacity-50">
+              <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
+            </button>
+            <button onClick={() => navigate('/student/apply-pass')} className="btn-primary">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Apply New Pass
+            </button>
+          </div>
         }
       />
 

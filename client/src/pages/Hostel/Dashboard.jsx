@@ -19,10 +19,37 @@ function fmt(date) {
   return new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+function fmtTime(t) {
+  if (!t) return '—'
+  const [h, m] = t.split(':')
+  const d = new Date(); d.setHours(+h, +m)
+  return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+}
+
 function CoordBadge({ pass }) {
   if (pass.pass_type === 'DAILY') return <span className="text-xs text-slate-400">N/A</span>
   if (pass.status === 'PENDING_COORDINATOR') return <span className="badge badge-warning">Pending</span>
   return <span className="badge badge-success">Approved</span>
+}
+
+function DetailRow({ label, value }) {
+  return (
+    <div className="flex justify-between items-start gap-4 py-2 border-b border-slate-100 last:border-0">
+      <span className="text-xs font-medium text-slate-500 uppercase tracking-wide flex-shrink-0 w-36">{label}</span>
+      <span className="text-sm text-slate-800 font-medium text-right">{value || '—'}</span>
+    </div>
+  )
+}
+
+function Section({ title, children }) {
+  return (
+    <div className="mb-4">
+      <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">{title}</p>
+      <div className="bg-slate-50 rounded-xl border border-slate-200 px-4 py-1">
+        {children}
+      </div>
+    </div>
+  )
 }
 
 export function Dashboard() {
@@ -34,22 +61,25 @@ export function Dashboard() {
   const [todayOverview, setTodayOverview] = useState({ entriesIn: 0, exitsOut: 0, currentlyOutside: 0, expectedReturnsToday: 0 })
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('dashboard')
-  const [selectedPass, setSelectedPass] = useState(null)
-  const [showModal, setShowModal] = useState(false)
-  const [rejectRemarks, setRejectRemarks] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+
+  // Modal state — shared between pending table and all-passes view
+  const [selected, setSelected] = useState(null)
+  const [view, setView] = useState('details') // 'details' | 'approve' | 'reject'
+  const [remarks, setRemarks] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [modalError, setModalError] = useState('')
 
   useEffect(() => { fetchData() }, [])
 
   const fetchData = async () => {
     try {
       setLoading(true)
-      const [dash, pending, allP, studs, outside, overview] = await Promise.all([
+      const [dash, pending, allP, studs, overview] = await Promise.all([
         hostelAPI.getDashboard(),
         hostelAPI.getPendingPasses(),
         hostelAPI.getAllPasses('ALL'),
         hostelAPI.getStudents(),
-        hostelAPI.getStudentsOutside(),
         hostelAPI.getTodayOverview()
       ])
       if (dash.success)     setStats(dash.data.stats || {})
@@ -62,23 +92,28 @@ export function Dashboard() {
     } finally { setLoading(false) }
   }
 
-  const handleApprove = async (passId) => {
+  const openDetails = (pass) => { setSelected(pass); setView('details'); setRemarks(''); setModalError('') }
+  const closeModal  = () => { setSelected(null); setView('details'); setRemarks(''); setModalError('') }
+
+  const handleApprove = async () => {
+    setModalError(''); setSubmitting(true)
     try {
-      const res = await hostelAPI.approvePass(passId, '')
-      if (!res?.success) { addNotification(res?.message || 'Failed to approve', 'error'); return }
-      await fetchData(); setShowModal(false); setRejectRemarks('')
-      addNotification('Pass approved successfully', 'success')
-    } catch (err) { addNotification(err.response?.data?.message || 'Failed to approve', 'error') }
+      const res = await hostelAPI.approvePass(selected.id, remarks)
+      if (!res?.success) { setModalError(res?.message || 'Failed to approve'); return }
+      closeModal(); addNotification('Pass approved successfully', 'success'); fetchData()
+    } catch (err) { setModalError(err.response?.data?.message || 'Failed to approve') }
+    finally { setSubmitting(false) }
   }
 
-  const handleReject = async (passId) => {
-    if (!rejectRemarks?.trim()) { addNotification('Remarks are required for rejection', 'error'); return }
+  const handleReject = async () => {
+    if (!remarks?.trim()) { setModalError('Remarks are required for rejection'); return }
+    setModalError(''); setSubmitting(true)
     try {
-      const res = await hostelAPI.rejectPass(passId, rejectRemarks)
-      if (!res?.success) { addNotification(res?.message || 'Failed to reject', 'error'); return }
-      await fetchData(); setShowModal(false); setRejectRemarks('')
-      addNotification('Pass rejected', 'success')
-    } catch (err) { addNotification(err.response?.data?.message || 'Failed to reject', 'error') }
+      const res = await hostelAPI.rejectPass(selected.id, remarks)
+      if (!res?.success) { setModalError(res?.message || 'Failed to reject'); return }
+      closeModal(); addNotification('Pass rejected', 'success'); fetchData()
+    } catch (err) { setModalError(err.response?.data?.message || 'Failed to reject') }
+    finally { setSubmitting(false) }
   }
 
   const filteredStudents = students.filter(s =>
@@ -87,6 +122,7 @@ export function Dashboard() {
     s.Department?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  // Reusable pending table — "View Details" opens the rich modal
   const PendingTable = ({ passes, limit }) => {
     const data = limit ? passes.slice(0, limit) : passes
     if (data.length === 0) return (
@@ -106,7 +142,7 @@ export function Dashboard() {
           <thead>
             <tr>
               <th>Student</th><th>Pass Type</th><th>Coordinator</th>
-              <th>Reason</th><th>Dates</th><th>Actions</th>
+              <th>Destination</th><th>Dates</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -129,7 +165,7 @@ export function Dashboard() {
                   </span>
                 </td>
                 <td><CoordBadge pass={pass} /></td>
-                <td><span className="text-sm text-slate-600 line-clamp-1 max-w-xs">{pass.reason || '—'}</span></td>
+                <td><span className="text-sm text-slate-600">{pass.destination || '—'}</span></td>
                 <td>
                   <span className="text-sm text-slate-600">
                     {pass.pass_type === 'DAILY'
@@ -141,27 +177,10 @@ export function Dashboard() {
                   {pass.status === 'PENDING_COORDINATOR' ? (
                     <span className="text-xs text-slate-400 italic">Awaiting Coordinator</span>
                   ) : (
-                    <div className="flex items-center gap-1.5">
-                      <button onClick={() => handleApprove(pass.id)}
-                        className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors border border-emerald-200" title="Approve">
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                      <button onClick={() => { setSelectedPass(pass); setShowModal(true) }}
-                        className="p-1.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors border border-red-200" title="Reject">
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                      <button onClick={() => { setSelectedPass(pass); setShowModal(true) }}
-                        className="p-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-200" title="View">
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                          <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                    </div>
+                    <button onClick={() => openDetails(pass)}
+                      className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition-colors border border-blue-200">
+                      View Details
+                    </button>
                   )}
                 </td>
               </tr>
@@ -222,15 +241,14 @@ export function Dashboard() {
             </div>
           </div>
           <div className="space-y-4">
-            {/* Today's Overview */}
             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
               <h3 className="font-semibold text-slate-800 text-sm mb-4">Today's Overview</h3>
               <div className="space-y-3">
                 {[
-                  { label: 'Entries (IN)', value: todayOverview.entriesIn, color: 'text-emerald-600' },
-                  { label: 'Exits (OUT)', value: todayOverview.exitsOut, color: 'text-orange-600' },
-                  { label: 'Currently Outside', value: todayOverview.currentlyOutside, color: 'text-violet-600' },
-                  { label: 'Expected Returns', value: todayOverview.expectedReturnsToday, color: 'text-blue-600' },
+                  { label: 'Entries (IN)',      value: todayOverview.entriesIn,          color: 'text-emerald-600' },
+                  { label: 'Exits (OUT)',        value: todayOverview.exitsOut,           color: 'text-orange-600' },
+                  { label: 'Currently Outside', value: todayOverview.currentlyOutside,   color: 'text-violet-600' },
+                  { label: 'Expected Returns',  value: todayOverview.expectedReturnsToday, color: 'text-blue-600' },
                 ].map(item => (
                   <div key={item.label} className="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-0">
                     <span className="text-sm text-slate-600">{item.label}</span>
@@ -239,7 +257,6 @@ export function Dashboard() {
                 ))}
               </div>
             </div>
-            {/* Notice */}
             <div className="bg-amber-50 rounded-2xl border border-amber-200 p-4">
               <p className="text-xs font-semibold text-amber-800 mb-1">Important</p>
               <ul className="space-y-1.5 text-xs text-amber-700">
@@ -286,9 +303,9 @@ export function Dashboard() {
                       <td><span className="text-sm text-slate-500">{fmt(pass.updatedAt)}</span></td>
                       <td><StatusBadge status={pass.status} /></td>
                       <td>
-                        <button onClick={() => { setSelectedPass(pass); setShowModal(true) }}
+                        <button onClick={() => openDetails(pass)}
                           className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition-colors border border-blue-200">
-                          View
+                          View Details
                         </button>
                       </td>
                     </tr>
@@ -334,88 +351,124 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Pass Detail / Reject Modal */}
+      {/* ── Rich Details / Approve / Reject Modal ── */}
       <Modal
-        isOpen={showModal && !!selectedPass}
-        onClose={() => { setShowModal(false); setSelectedPass(null); setRejectRemarks('') }}
-        title="Pass Details"
+        isOpen={!!selected}
+        onClose={closeModal}
+        title={
+          view === 'approve' ? 'Approve Pass' :
+          view === 'reject'  ? 'Reject Pass'  :
+          'Gate Pass Details'
+        }
         size="md"
         footer={
-          selectedPass?.status === 'PENDING_HOSTEL' ? (
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Rejection Remarks <span className="text-slate-400 text-xs">(required for rejection)</span>
-                </label>
-                <textarea value={rejectRemarks} onChange={e => setRejectRemarks(e.target.value)}
-                  placeholder="Enter reason for rejection..." rows={2}
-                  className="input-field resize-none" />
-              </div>
+          view === 'details' ? (
+            selected?.status === 'PENDING_HOSTEL' ? (
               <div className="flex gap-3">
-                <button onClick={() => handleApprove(selectedPass.id)}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition-colors">
-                  Approve Pass
-                </button>
-                <button onClick={() => handleReject(selectedPass.id)}
+                <button onClick={closeModal} className="flex-1 btn-secondary py-2.5">Close</button>
+                <button onClick={() => { setView('reject'); setRemarks(''); setModalError('') }}
                   className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 text-white font-semibold text-sm hover:bg-red-700 transition-colors">
-                  Reject Pass
+                  Reject
+                </button>
+                <button onClick={() => { setView('approve'); setRemarks(''); setModalError('') }}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition-colors">
+                  Approve
                 </button>
               </div>
+            ) : (
+              <div className="flex gap-3">
+                <button onClick={closeModal} className="flex-1 btn-secondary py-2.5">Close</button>
+              </div>
+            )
+          ) : view === 'approve' ? (
+            <div className="flex gap-3">
+              <button onClick={() => setView('details')} className="flex-1 btn-secondary py-2.5">Back</button>
+              <button onClick={handleApprove} disabled={submitting}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-50">
+                {submitting ? 'Approving...' : 'Confirm Approve'}
+              </button>
             </div>
           ) : (
-            <div className="flex items-center justify-center gap-2 text-slate-500 text-sm">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              This pass has been {selectedPass?.status?.toLowerCase()} and cannot be modified.
+            <div className="flex gap-3">
+              <button onClick={() => setView('details')} className="flex-1 btn-secondary py-2.5">Back</button>
+              <button onClick={handleReject} disabled={submitting || !remarks?.trim()}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 text-white font-semibold text-sm hover:bg-red-700 transition-colors disabled:opacity-50">
+                {submitting ? 'Rejecting...' : 'Confirm Reject'}
+              </button>
             </div>
           )
         }
       >
-        {selectedPass && (
-          <div className="space-y-4">
-            {(selectedPass.status === 'APPROVED' || selectedPass.status === 'REJECTED') && (
-              <div className={`p-3 rounded-xl border-2 ${selectedPass.status === 'APPROVED' ? 'bg-emerald-50 border-emerald-300' : 'bg-red-50 border-red-300'}`}>
-                <StatusBadge status={selectedPass.status} />
+
+        {selected && view === 'details' && (
+          <div className="space-y-3">
+            {selected.status && selected.status !== 'PENDING_HOSTEL' && (
+              <div className={`p-3 rounded-xl border-2 ${selected.status === 'APPROVED' ? 'bg-emerald-50 border-emerald-300' : 'bg-red-50 border-red-300'}`}>
+                <StatusBadge status={selected.status} />
               </div>
             )}
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Student</p>
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-sm">
-                {[
-                  ['Name', selectedPass.Student?.User?.name],
-                  ['USN', selectedPass.Student?.usn],
-                  ['Department', selectedPass.Student?.Department?.name],
-                  ['Semester', selectedPass.Student?.semester],
-                  ['Parent Contact', selectedPass.parent_contact],
-                ].map(([l, v]) => v && (
-                  <div key={l} className="flex justify-between">
-                    <span className="text-slate-500">{l}:</span>
-                    <span className="font-medium text-slate-800">{v}</span>
-                  </div>
-                ))}
-              </div>
+            <Section title="Student Information">
+              <DetailRow label="Full Name"    value={selected.Student?.User?.name} />
+              <DetailRow label="USN"          value={selected.Student?.usn} />
+              <DetailRow label="Department"   value={selected.Student?.Department?.name} />
+              <DetailRow label="Program"      value={selected.Student?.program_type} />
+              <DetailRow label="Year / Sem"   value={selected.Student?.year_of_study && selected.Student?.semester ? `Year ${selected.Student.year_of_study} — Sem ${selected.Student.semester}` : null} />
+              <DetailRow label="Email"        value={selected.Student?.User?.email} />
+              <DetailRow label="Phone"        value={selected.Student?.User?.phone} />
+            </Section>
+            <Section title="Hostel Information">
+              <DetailRow label="Hostel"       value={selected.Student?.hostel_name} />
+              <DetailRow label="Room No."     value={selected.Student?.room_number} />
+              <DetailRow label="Parent Phone" value={selected.Student?.parent_phone || selected.parent_contact} />
+            </Section>
+            <Section title="Pass Details">
+              <DetailRow label="Pass Type"    value={selected.pass_type === 'LONG_LEAVE' ? 'Long Leave' : 'Daily'} />
+              <DetailRow label="Destination"  value={selected.destination} />
+              <DetailRow label="Reason"       value={selected.reason} />
+              {selected.pass_type === 'DAILY' ? (
+                <>
+                  <DetailRow label="Pass Date"   value={fmt(selected.pass_date)} />
+                  <DetailRow label="Exit Time"   value={fmtTime(selected.exit_time)} />
+                  <DetailRow label="Return Time" value={fmtTime(selected.expected_return_time)} />
+                </>
+              ) : (
+                <>
+                  <DetailRow label="Leaving Date"   value={fmt(selected.leaving_date || selected.from_date)} />
+                  <DetailRow label="Returning Date" value={fmt(selected.returning_date || selected.to_date)} />
+                  <DetailRow label="Parent Contact" value={selected.parent_contact || selected.Student?.parent_phone} />
+                </>
+              )}
+              <DetailRow label="Applied On"   value={fmt(selected.createdAt)} />
+            </Section>
+          </div>
+        )}
+
+        {selected && view === 'approve' && (
+          <div className="space-y-4">
+            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-800">
+              You are about to <strong>approve</strong> the pass for <strong>{selected.Student?.User?.name}</strong> ({selected.Student?.usn}).
             </div>
+            {modalError && <p className="text-xs text-red-600">{modalError}</p>}
             <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Pass Info</p>
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-sm">
-                {[
-                  ['Type', selectedPass.pass_type === 'LONG_LEAVE' ? 'Long Leave' : 'Daily Pass'],
-                  ['Reason', selectedPass.reason],
-                  ['Destination', selectedPass.destination],
-                  selectedPass.pass_type === 'DAILY'
-                    ? ['Pass Date', fmt(selectedPass.pass_date)]
-                    : ['Leaving', fmt(selectedPass.leaving_date || selectedPass.from_date)],
-                  selectedPass.pass_type !== 'DAILY'
-                    ? ['Returning', fmt(selectedPass.returning_date || selectedPass.to_date)]
-                    : null,
-                ].filter(Boolean).map(([l, v]) => (
-                  <div key={l} className="flex justify-between">
-                    <span className="text-slate-500">{l}:</span>
-                    <span className="font-medium text-slate-800 text-right max-w-xs">{v || '—'}</span>
-                  </div>
-                ))}
-              </div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Remarks <span className="text-slate-400 font-normal">(optional)</span></label>
+              <textarea value={remarks} onChange={e => setRemarks(e.target.value)} rows={3}
+                placeholder="Add any remarks..." className="input-field resize-none" />
+            </div>
+          </div>
+        )}
+
+        {selected && view === 'reject' && (
+          <div className="space-y-4">
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-800">
+              You are about to <strong>reject</strong> the pass for <strong>{selected.Student?.User?.name}</strong> ({selected.Student?.usn}).
+            </div>
+            {modalError && <p className="text-xs text-red-600">{modalError}</p>}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Remarks <span className="text-red-500">*</span></label>
+              <textarea value={remarks} onChange={e => setRemarks(e.target.value)} rows={3}
+                placeholder="Provide reason for rejection..."
+                className={`input-field resize-none ${!remarks?.trim() && modalError ? 'border-red-400' : ''}`} />
+              <p className="text-xs text-slate-400 mt-1">Required for rejection</p>
             </div>
           </div>
         )}

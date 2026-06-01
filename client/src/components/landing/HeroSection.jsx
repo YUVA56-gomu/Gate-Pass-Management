@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BubbleDecorations } from './BubbleDecorations'
+import { HeroIllustration } from './HeroIllustration'
 
 export const HeroSection = () => {
   const navigate = useNavigate()
@@ -43,10 +44,38 @@ export const HeroSection = () => {
       {/* Bubble Decorations */}
       <BubbleDecorations variant="hero" />
 
-      <div className="max-w-6xl mx-auto relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      {/* ── 3 mid-gap bubbles between text and illustration ── */}
+      <div className="hidden lg:block pointer-events-none" style={{ position:'absolute', inset:0, zIndex:0 }}>
+        {/* Large — upper gap */}
+        <div className="animate-float-slow" style={{
+          position:'absolute', top:'15%', left:'49%',
+          width:72, height:72, borderRadius:'50%',
+          background:'linear-gradient(135deg,rgba(139,92,246,0.2),rgba(99,102,241,0.09))',
+          border:'1.5px solid rgba(139,92,246,0.16)',
+          backdropFilter:'blur(6px)',
+        }} />
+        {/* Small — just below-right of large */}
+        <div className="animate-bounce-slow" style={{
+          position:'absolute', top:'31%', left:'51.8%',
+          width:22, height:22, borderRadius:'50%',
+          background:'rgba(167,139,250,0.38)',
+          border:'1px solid rgba(167,139,250,0.25)',
+          animationDelay:'0.7s',
+        }} />
+        {/* Medium — lower gap */}
+        <div className="animate-float-medium" style={{
+          position:'absolute', top:'60%', left:'48.5%',
+          width:46, height:46, borderRadius:'50%',
+          background:'linear-gradient(135deg,rgba(99,102,241,0.18),rgba(59,130,246,0.09))',
+          border:'1px solid rgba(99,102,241,0.14)',
+          animationDelay:'1s',
+        }} />
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
           {/* Left Content */}
-          <div className="animate-fade-in-up">
+          <div className="animate-fade-in-up lg:pr-6">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-blue-100/50 backdrop-blur-sm rounded-full border border-blue-200/50">
               <span className="text-blue-600 font-semibold text-sm">✨ Secure • Smart • Digital</span>
@@ -116,13 +145,10 @@ export const HeroSection = () => {
             </div>
           </div>
 
-          {/* Right Side - Decorative bubbles */}
-          <div className="hidden lg:flex items-center justify-center animate-fade-in stagger-4">
-            <div className="relative w-full h-96">
-              {/* Additional decorative bubbles */}
-              <div className="absolute top-10 right-10 w-24 h-24 bg-blue-300 rounded-full opacity-20 animate-bounce-slow"></div>
-              <div className="absolute bottom-20 left-10 w-32 h-32 bg-purple-300 rounded-full opacity-15 animate-pulse-slow"></div>
-              <div className="absolute top-1/2 right-1/4 w-16 h-16 bg-blue-400 rounded-full opacity-10 animate-bounce-slow"></div>
+          {/* Right Side - Hero Illustration */}
+          <div className="hidden lg:flex items-center justify-end animate-fade-in stagger-4">
+            <div style={{ width: 420, height: 420, flexShrink: 0 }}>
+              <HeroIllustration />
             </div>
           </div>
         </div>

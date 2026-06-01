@@ -1,6 +1,7 @@
 import Pass from '../models/Pass.js'
 import User from '../models/User.js'
 import Student from '../models/Student.js'
+import { Approval } from '../models/index.js'
 
 // Standard includes used across all queries
 const passIncludes = [
@@ -13,6 +14,10 @@ const passIncludes = [
     model: User,
     as: 'hostelStaff',
     attributes: ['id', 'name', 'email', 'phone']
+  },
+  {
+    model: Approval,
+    attributes: ['id', 'stage', 'status', 'remarks', 'approved_at']
   }
 ]
 
