@@ -116,6 +116,7 @@ const buildDailyPassPDF = (doc, pass, approvals, qrImageBuffer) => {
 
   let y = 0
 
+
   // ── Header band ──
   doc.rect(0, 0, 595, 70).fill('#1e40af')
   doc.fillColor('white').fontSize(18).font('Helvetica-Bold')
@@ -181,6 +182,10 @@ const buildDailyPassPDF = (doc, pass, approvals, qrImageBuffer) => {
   doc.fillColor('#555555').fontSize(8).font('Helvetica')
     .text('Present this QR code to the security guard for scanning.', 40, y, { align: 'center', width: 515 })
   y += 14
+  if (y > 600) {
+  doc.addPage()
+  y = 70
+}
   const qrX = (595 - 140) / 2
   doc.image(qrImageBuffer, qrX, y, { width: 140, height: 140 })
   y += 155
@@ -280,15 +285,79 @@ const buildLongLeavePDF = (doc, pass, approvals, qrImageBuffer) => {
   row(doc, 'Approved On', fmtDateTime(hostelApproval?.approved_at), y); y += 16
   row(doc, 'Remarks', hostelApproval?.remarks || 'None', y); y += 16
   hr(doc, y + 4); y += 14
+  y += 30
+
+doc.fontSize(9)
+  .fillColor('#555555')
+  .font('Helvetica')
+  .text('Authorized Approval', 380, y)
+
+y += 35
+
+doc.moveTo(360, y)
+  .lineTo(520, y)
+  .strokeColor('#666666')
+  .stroke()
+
+y += 5
+
+doc.fontSize(8)
+  .text('Smart Gate Pass System', 380, y)
 
   // ── QR Code ──
-  y = section(doc, 'QR CODE — SHOW AT SECURITY GATE', y)
-  doc.fillColor('#555555').fontSize(8).font('Helvetica')
-    .text('Present this QR code to the security guard for scanning.', 40, y, { align: 'center', width: 515 })
-  y += 14
-  const qrX = (595 - 140) / 2
-  doc.image(qrImageBuffer, qrX, y, { width: 140, height: 140 })
-  y += 155
+if (y > 600) {
+  doc.addPage()
+  y = 70
+}
+
+doc
+  .fontSize(18)
+  .fillColor('#1e40af')
+  .font('Helvetica-Bold')
+  .text('QR CODE', 40, y, {
+    align: 'center',
+    width: 515
+  })
+
+y += 25
+
+doc
+  .fontSize(10)
+  .fillColor('#555555')
+  .font('Helvetica')
+  .text(
+    'QR CODE - SHOW AT SECURITY GATE.',
+    40,
+    y,
+    {
+      align: 'center',
+      width: 515
+    }
+  )
+
+y += 40
+
+doc.fillColor('#555555')
+  .fontSize(8)
+  .font('Helvetica')
+  .text(
+    'Present this QR code to the security guard for scanning.',
+    40,
+    y,
+    { align: 'center', width: 515 }
+  )
+
+y += 14
+
+const qrSize = 200
+const qrX = (595 - qrSize) / 2
+
+doc.image(qrImageBuffer, qrX, y, {
+  width: qrSize,
+  height: qrSize
+})
+
+y += 155
 
   // ── Footer ──
   doc.rect(0, 780, 595, 62).fill('#f1f5f9')
