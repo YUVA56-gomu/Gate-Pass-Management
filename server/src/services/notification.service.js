@@ -80,7 +80,7 @@ export const getUserNotifications = async (userId, options = {}) => {
       include: [
         {
           model: Pass,
-          attributes: ['id', 'type', 'status', 'from_date', 'to_date'],
+          attributes: ['id', 'pass_type', 'status', 'from_date', 'to_date'],
           as: 'relatedPass'
         }
       ],
