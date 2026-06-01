@@ -26,6 +26,7 @@ import HostelDashboard from '../pages/Hostel/Dashboard'
 import HostelRequests from '../pages/Hostel/PendingRequests'
 import HostelStudents from '../pages/Hostel/Students'
 import HostelAllPasses from '../pages/Hostel/AllPasses'
+import HostelProfile from '../pages/Hostel/Profile'
 
 // Security Pages
 import SecurityDashboard from '../pages/Security/Dashboard'
@@ -79,6 +80,7 @@ function AppRoutes() {
           <Route path="requests" element={<HostelRequests />} />
           <Route path="students" element={<HostelStudents />} />
           <Route path="all-passes" element={<HostelAllPasses />} />
+          <Route path="profile" element={<HostelProfile />} />
         </Route>
 
         {/* Security Guard Routes */}

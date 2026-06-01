@@ -16,9 +16,10 @@ export const getPendingPasses = async () => {
  * @returns {Promise<object>} Approval record
  */
 export const approvePass = async (passId, remarks = null) => {
-  const response = await axiosInstance.put(`/hostel/passes/${passId}/approve`, {
-    remarks
-  })
+  const url = `/hostel/passes/${passId}/approve`
+  console.log('[HOSTEL API] PUT', url, { remarks })
+  const response = await axiosInstance.put(url, { remarks })
+  console.log('[HOSTEL API] Approve response:', response.status, response.data)
   return response.data
 }
 
@@ -29,9 +30,10 @@ export const approvePass = async (passId, remarks = null) => {
  * @returns {Promise<object>} Approval record
  */
 export const rejectPass = async (passId, remarks) => {
-  const response = await axiosInstance.put(`/hostel/passes/${passId}/reject`, {
-    remarks
-  })
+  const url = `/hostel/passes/${passId}/reject`
+  console.log('[HOSTEL API] PUT', url, { remarks: remarks ? '(provided)' : '(empty)' })
+  const response = await axiosInstance.put(url, { remarks })
+  console.log('[HOSTEL API] Reject response:', response.status, response.data)
   return response.data
 }
 
@@ -68,11 +70,41 @@ export const getDashboard = async () => {
   return response.data
 }
 
+/**
+ * Get approved passes
+ * @returns {Promise<object>} List of approved passes
+ */
+export const getApprovedPasses = async () => {
+  const response = await axiosInstance.get('/hostel/approved')
+  return response.data
+}
+
+/**
+ * Get students currently outside
+ * @returns {Promise<object>} List of students currently outside
+ */
+export const getStudentsOutside = async () => {
+  const response = await axiosInstance.get('/hostel/students-outside')
+  return response.data
+}
+
+/**
+ * Get today's overview statistics
+ * @returns {Promise<object>} Today's overview data (entries, exits, currently outside, expected returns)
+ */
+export const getTodayOverview = async () => {
+  const response = await axiosInstance.get('/hostel/today-overview')
+  return response.data
+}
+
 export default {
   getPendingPasses,
   approvePass,
   rejectPass,
   getAllPasses,
   getStudents,
-  getDashboard
+  getDashboard,
+  getApprovedPasses,
+  getStudentsOutside,
+  getTodayOverview
 }

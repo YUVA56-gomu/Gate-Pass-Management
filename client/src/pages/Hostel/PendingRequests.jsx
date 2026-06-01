@@ -24,8 +24,14 @@ const PendingRequests = () => {
       setLoading(true)
       setError('')
       const response = await hostelAPI.getPendingPasses()
-      setRequests(response.data || [])
+      console.log('[HOSTEL PENDING] Loaded pending passes:', response?.data?.length)
+      if (response?.success) {
+        setRequests(response.data || [])
+      } else {
+        setError(response?.message || 'Failed to load pending passes')
+      }
     } catch (err) {
+      console.error('[HOSTEL PENDING] Load error:', err.response?.data || err.message)
       setError(err.response?.data?.message || 'Failed to load pending passes')
     } finally {
       setLoading(false)
@@ -62,13 +68,20 @@ const PendingRequests = () => {
     setSubmitting(true)
 
     try {
-      await hostelAPI.approvePass(selectedRequest.id, modalData.remarks)
+      console.log('[HOSTEL PENDING] Approving pass id:', selectedRequest.id)
+      const response = await hostelAPI.approvePass(selectedRequest.id, modalData.remarks)
+      console.log('[HOSTEL PENDING] Approve response:', response)
+      if (!response?.success) {
+        setModalError(response?.message || 'Failed to approve pass')
+        return
+      }
       setShowApprovalModal(false)
       setSelectedRequest(null)
       setModalData({ remarks: '' })
       // Refresh list
       await fetchPendingPasses()
     } catch (err) {
+      console.error('[HOSTEL PENDING] Approve error:', err.response?.data || err.message)
       setModalError(err.response?.data?.message || 'Failed to approve pass')
     } finally {
       setSubmitting(false)
@@ -88,13 +101,20 @@ const PendingRequests = () => {
     setSubmitting(true)
 
     try {
-      await hostelAPI.rejectPass(selectedRequest.id, modalData.remarks)
+      console.log('[HOSTEL PENDING] Rejecting pass id:', selectedRequest.id)
+      const response = await hostelAPI.rejectPass(selectedRequest.id, modalData.remarks)
+      console.log('[HOSTEL PENDING] Reject response:', response)
+      if (!response?.success) {
+        setModalError(response?.message || 'Failed to reject pass')
+        return
+      }
       setShowRejectModal(false)
       setSelectedRequest(null)
       setModalData({ remarks: '' })
       // Refresh list
       await fetchPendingPasses()
     } catch (err) {
+      console.error('[HOSTEL PENDING] Reject error:', err.response?.data || err.message)
       setModalError(err.response?.data?.message || 'Failed to reject pass')
     } finally {
       setSubmitting(false)

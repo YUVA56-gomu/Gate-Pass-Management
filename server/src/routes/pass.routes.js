@@ -1,17 +1,18 @@
 import express from 'express'
-import { passController } from '../controllers/pass.controller.js'
-import { authMiddleware } from '../middleware/auth.middleware.js'
+import { createPass, deletePass, getMyPasses, getPassById } from '../controllers/pass.controller.js'
+import { authenticate } from '../middleware/auth.middleware.js'
 import { authorize } from '../middleware/role.middleware.js'
 
 const router = express.Router()
 
-router.use(authMiddleware)
+router.use(authenticate)
 
 // Student pass routes
-router.post('/', authorize('STUDENT'), passController.createPass)
-router.get('/my', authorize('STUDENT'), passController.getMyPasses)
+router.post('/', authorize('STUDENT'), createPass)
+router.get('/my', authorize('STUDENT'), getMyPasses)
+router.delete('/:passId', authorize('STUDENT'), deletePass)
 
 // Get pass by ID (accessible by student who owns it, coordinators, hostel staff, security, admin)
-router.get('/:id', passController.getPassById)
+router.get('/:id', getPassById)
 
 export default router

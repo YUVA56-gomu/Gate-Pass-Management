@@ -38,6 +38,12 @@ Pass.belongsTo(Student, { foreignKey: 'student_id' })
 Pass.hasMany(Approval, { foreignKey: 'pass_id', onDelete: 'CASCADE' })
 Approval.belongsTo(Pass, { foreignKey: 'pass_id' })
 
+Pass.belongsTo(User, { foreignKey: 'coordinator_id', as: 'coordinator' })
+User.hasMany(Pass, { foreignKey: 'coordinator_id', onDelete: 'SET NULL' })
+
+Pass.belongsTo(User, { foreignKey: 'hostel_staff_id', as: 'hostelStaff' })
+User.hasMany(Pass, { foreignKey: 'hostel_staff_id', as: 'hostelPasses', onDelete: 'SET NULL' })
+
 Pass.hasOne(QRToken, { foreignKey: 'pass_id', onDelete: 'CASCADE' })
 QRToken.belongsTo(Pass, { foreignKey: 'pass_id' })
 

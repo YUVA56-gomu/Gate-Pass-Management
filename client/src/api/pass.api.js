@@ -29,6 +29,16 @@ export const getPassById = async (passId) => {
   return response.data
 }
 
+/**
+ * Delete a pass
+ * @param {number} passId - Pass ID
+ * @returns {Promise<object>} Delete confirmation
+ */
+export const deletePass = async (passId) => {
+  const response = await axiosInstance.delete(`/passes/${passId}`)
+  return response.data
+}
+
 export default {
   createPass,
   getMyPasses,

@@ -6,5 +6,6 @@ export const approvalRepository = {
   findByPassId: (passId) => Approval.findAll({ where: { pass_id: passId } }),
   findByStatus: (status) => Approval.findAll({ where: { status } }),
   update: (id, data) => Approval.update(data, { where: { id } }),
-  findPending: () => Approval.findAll({ where: { status: 'pending' } })
+  findPending: () => Approval.findAll({ where: { status: 'pending' } }),
+  deleteByPassId: (passId) => Approval.destroy({ where: { pass_id: passId } })
 }

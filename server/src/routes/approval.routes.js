@@ -1,12 +1,12 @@
 import express from 'express'
 import { approvalController } from '../controllers/approval.controller.js'
-import { authMiddleware } from '../middleware/auth.middleware.js'
+import { authenticate } from '../middleware/auth.middleware.js'
 import { authorize } from '../middleware/role.middleware.js'
 
 const router = express.Router()
 
 // All routes require authentication
-router.use(authMiddleware)
+router.use(authenticate)
 
 /**
  * Coordinator Approval Routes

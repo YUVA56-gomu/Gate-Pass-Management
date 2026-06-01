@@ -36,12 +36,22 @@ const Pass = sequelize.define('Pass', {
   from_date: {
     type: DataTypes.DATEONLY,
     allowNull: true,
-    comment: 'For LONG_LEAVE pass type - leaving date'
+    comment: 'For LONG_LEAVE pass type - leaving date (legacy field)'
   },
   to_date: {
     type: DataTypes.DATEONLY,
     allowNull: true,
-    comment: 'For LONG_LEAVE pass type - returning date'
+    comment: 'For LONG_LEAVE pass type - returning date (legacy field)'
+  },
+  leaving_date: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+    comment: 'For LONG_LEAVE pass type - leaving date (new field name)'
+  },
+  returning_date: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+    comment: 'For LONG_LEAVE pass type - returning date (new field name)'
   },
   exit_time: {
     type: DataTypes.TIME,
@@ -66,6 +76,15 @@ const Pass = sequelize.define('Pass', {
       key: 'id'
     },
     comment: 'Assigned coordinator for approval'
+  },
+  hostel_staff_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    },
+    comment: 'Selected hostel staff for approval'
   },
   status: {
     type: DataTypes.ENUM('PENDING_COORDINATOR', 'PENDING_HOSTEL', 'APPROVED', 'REJECTED', 'CANCELLED', 'COMPLETED'),

@@ -20,6 +20,7 @@ import userRoutes from './routes/user.routes.js'
 import adminRoutes from './routes/admin.routes.js'
 import reportRoutes from './routes/report.routes.js'
 import notificationRoutes from './routes/notification.routes.js'
+import coordinatorRoutes from './routes/coordinator.routes.js'
 
 dotenv.config()
 
@@ -30,6 +31,13 @@ const PORT = process.env.PORT || 5000
 app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+
+// Serve uploaded files (PDFs, etc.)
+import { fileURLToPath } from 'url'
+import path from 'path'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
 // Routes
 app.use('/auth', authRoutes)
@@ -44,6 +52,7 @@ app.use('/users', userRoutes)
 app.use('/admin', adminRoutes)
 app.use('/reports', reportRoutes)
 app.use('/notifications', notificationRoutes)
+app.use('/coordinators', coordinatorRoutes)
 
 // Error handling
 app.use(errorHandler)
@@ -113,6 +122,56 @@ const runPassTypeMigration = async () => {
   }
 }
 
+// Add hostel_staff_id column to passes table if it doesn't exist
+const runHostelStaffMigration = async () => {
+  try {
+    const queryInterface = sequelize.getQueryInterface()
+    const tables = await queryInterface.showAllTables()
+
+    if (!tables.includes('passes')) {
+      return
+    }
+
+    const columns = await queryInterface.describeTable('passes')
+    if (!columns.hostel_staff_id) {
+      console.log('[MIGRATION] Adding hostel_staff_id column to passes table...')
+      await sequelize.query(
+        'ALTER TABLE passes ADD COLUMN hostel_staff_id INT NULL REFERENCES users(id) ON DELETE SET NULL'
+      )
+      console.log('[MIGRATION] hostel_staff_id column added successfully')
+    } else {
+      console.log('[MIGRATION] hostel_staff_id column already exists, skipping')
+    }
+  } catch (error) {
+    console.error('[MIGRATION] Error adding hostel_staff_id column:', error.message)
+  }
+}
+
+// Fix notification type ENUM to use uppercase values
+const runNotificationTypeMigration = async () => {
+  try {
+    const queryInterface = sequelize.getQueryInterface()
+    const tables = await queryInterface.showAllTables()
+
+    if (!tables.includes('notifications')) {
+      return
+    }
+
+    console.log('[MIGRATION] Updating notification type ENUM...')
+    await sequelize.query(`
+      ALTER TABLE notifications MODIFY COLUMN type ENUM(
+        'PASS_SUBMITTED','COORDINATOR_APPROVED','COORDINATOR_REJECTED',
+        'HOSTEL_APPROVED','HOSTEL_REJECTED','QR_GENERATED',
+        'PASS_COMPLETED','NEW_REQUEST','SYSTEM'
+      ) NOT NULL
+    `)
+    console.log('[MIGRATION] Notification type ENUM updated successfully')
+  } catch (error) {
+    // Silently continue — may already be correct
+    console.log('[MIGRATION] Notification ENUM migration skipped:', error.message)
+  }
+}
+
 // Database sync and server start
 const startServer = async () => {
   try {
@@ -124,6 +183,12 @@ const startServer = async () => {
     
     // Run pass type migration
     await runPassTypeMigration()
+    
+    // Run hostel staff migration
+    await runHostelStaffMigration()
+
+    // Fix notification type ENUM
+    await runNotificationTypeMigration()
     
     // Use force: false to avoid dropping tables, and alter: false to avoid schema modification issues
     await sequelize.sync({ force: false, alter: false })

@@ -1,7 +1,6 @@
 import { passRepository } from '../repositories/pass.repository.js'
 import { approvalRepository } from '../repositories/approval.repository.js'
 import User from '../models/User.js'
-import Student from '../models/Student.js'
 
 /**
  * Parse date string to YYYY-MM-DD format
@@ -9,30 +8,30 @@ import Student from '../models/Student.js'
  */
 const parseDate = (dateStr) => {
   if (!dateStr) return null
-  
+
   // If already in YYYY-MM-DD format
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
     return dateStr
   }
-  
+
   // Parse MM/DD/YYYY format
   const parts = dateStr.split('/')
   if (parts.length === 3) {
     const [month, day, year] = parts
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
   }
-  
+
   return dateStr
 }
 
 /**
- * Get today's date in YYYY-MM-DD format (UTC)
+ * Get today's date in YYYY-MM-DD format (local timezone)
  */
 const getTodayDate = () => {
   const today = new Date()
-  const year = today.getUTCFullYear()
-  const month = String(today.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(today.getUTCDate()).padStart(2, '0')
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
@@ -46,32 +45,6 @@ const compareDate = (date1, date2) => {
   return 0
 }
 
-/**
- * Find coordinator for a student's department
- */
-const findCoordinatorForDepartment = async (departmentId) => {
-  try {
-    const coordinator = await User.findOne({
-      where: {
-        role: 'COORDINATOR',
-        is_active: true
-      },
-      attributes: ['id', 'name', 'email', 'phone']
-    })
-    
-    if (coordinator) {
-      console.log(`[COORDINATOR ASSIGNMENT] Found coordinator: ${coordinator.name} (ID: ${coordinator.id}) for department ${departmentId}`)
-      return coordinator
-    }
-    
-    console.log(`[COORDINATOR ASSIGNMENT] No coordinator found for department ${departmentId}`)
-    return null
-  } catch (error) {
-    console.error('[COORDINATOR ASSIGNMENT] Error finding coordinator:', error.message)
-    return null
-  }
-}
-
 export const passService = {
   createPass: async (data) => {
     console.log('[PASS SERVICE] Creating pass with data:', {
@@ -79,8 +52,10 @@ export const passService = {
       reason: data.reason,
       destination: data.destination,
       pass_date: data.pass_date,
-      from_date: data.from_date,
-      to_date: data.to_date
+      leaving_date: data.leaving_date,
+      returning_date: data.returning_date,
+      hostel_staff_id: data.hostel_staff_id,
+      coordinator_id: data.coordinator_id
     })
 
     // Validate pass type
@@ -89,31 +64,31 @@ export const passService = {
     }
 
     const today = getTodayDate()
-    console.log(`[PASS SERVICE] Today's date (UTC): ${today}`)
+    console.log(`[PASS SERVICE] Today's date: ${today}`)
 
-    // DAILY PASS VALIDATION
+    // ─── DAILY PASS ───────────────────────────────────────────────────────────
     if (data.pass_type === 'DAILY') {
       if (!data.pass_date) {
         throw new Error('Pass date is required for daily pass')
       }
 
+      if (!data.hostel_staff_id) {
+        throw new Error('Hostel staff selection is required for daily pass')
+      }
+
       const passDate = parseDate(data.pass_date)
       console.log(`[PASS SERVICE] Daily pass date: ${passDate}`)
 
-      // Pass date cannot be in the past
       if (compareDate(passDate, today) < 0) {
         throw new Error('Pass date cannot be in the past')
       }
 
-      // Auto-assign coordinator for daily pass
-      const student = await Student.findByPk(data.student_id)
-      let coordinatorId = null
-
-      if (student && student.department_id) {
-        const coordinator = await findCoordinatorForDepartment(student.department_id)
-        if (coordinator) {
-          coordinatorId = coordinator.id
-        }
+      // Validate hostel staff exists and is active
+      const hostelStaff = await User.findOne({
+        where: { id: data.hostel_staff_id, role: 'HOSTEL_STAFF', is_active: true }
+      })
+      if (!hostelStaff) {
+        throw new Error('Selected hostel staff is not available')
       }
 
       const passData = {
@@ -122,14 +97,16 @@ export const passService = {
         pass_date: passDate,
         from_date: null,
         to_date: null,
-        coordinator_id: coordinatorId,
+        leaving_date: null,
+        returning_date: null,
+        coordinator_id: null,        // Daily pass skips coordinator
+        hostel_staff_id: data.hostel_staff_id,
         status: 'PENDING_HOSTEL'
       }
 
       const pass = await passRepository.create(passData)
-      console.log(`[PASS SERVICE] Daily pass created with ID: ${pass.id}, Coordinator ID: ${coordinatorId}`)
+      console.log(`[PASS SERVICE] Daily pass created: ID=${pass.id}, HostelStaff=${data.hostel_staff_id}`)
 
-      // Create hostel staff approval record
       await approvalRepository.create({
         pass_id: pass.id,
         stage: 'HOSTEL_STAFF',
@@ -139,40 +116,46 @@ export const passService = {
       return pass
     }
 
-    // LONG LEAVE VALIDATION
+    // ─── LONG LEAVE ───────────────────────────────────────────────────────────
     if (data.pass_type === 'LONG_LEAVE') {
-      if (!data.from_date || !data.to_date) {
+      if (!data.leaving_date || !data.returning_date) {
         throw new Error('Leaving date and returning date are required for long leave')
       }
-
       if (!data.parent_contact) {
         throw new Error('Parent contact is required for long leave')
       }
+      if (!data.coordinator_id) {
+        throw new Error('Coordinator selection is required for long leave')
+      }
+      if (!data.hostel_staff_id) {
+        throw new Error('Hostel staff selection is required for long leave')
+      }
 
-      const fromDate = parseDate(data.from_date)
-      const toDate = parseDate(data.to_date)
-
+      const fromDate = parseDate(data.leaving_date)
+      const toDate = parseDate(data.returning_date)
       console.log(`[PASS SERVICE] Long leave - From: ${fromDate}, To: ${toDate}`)
 
-      // Leaving date cannot be in the past
       if (compareDate(fromDate, today) < 0) {
         throw new Error('Leaving date cannot be in the past')
       }
-
-      // Returning date must be after leaving date
       if (compareDate(toDate, fromDate) <= 0) {
         throw new Error('Returning date must be after leaving date')
       }
 
-      // Auto-assign coordinator for long leave
-      const student = await Student.findByPk(data.student_id)
-      let coordinatorId = null
+      // Validate coordinator
+      const coordinator = await User.findOne({
+        where: { id: data.coordinator_id, role: 'COORDINATOR', is_active: true }
+      })
+      if (!coordinator) {
+        throw new Error('Selected coordinator is not available')
+      }
 
-      if (student && student.department_id) {
-        const coordinator = await findCoordinatorForDepartment(student.department_id)
-        if (coordinator) {
-          coordinatorId = coordinator.id
-        }
+      // Validate hostel staff
+      const hostelStaff = await User.findOne({
+        where: { id: data.hostel_staff_id, role: 'HOSTEL_STAFF', is_active: true }
+      })
+      if (!hostelStaff) {
+        throw new Error('Selected hostel staff is not available')
       }
 
       const passData = {
@@ -181,21 +164,22 @@ export const passService = {
         pass_date: null,
         from_date: fromDate,
         to_date: toDate,
-        coordinator_id: coordinatorId,
+        leaving_date: fromDate,
+        returning_date: toDate,
+        coordinator_id: data.coordinator_id,
+        hostel_staff_id: data.hostel_staff_id,
         status: 'PENDING_COORDINATOR'
       }
 
       const pass = await passRepository.create(passData)
-      console.log(`[PASS SERVICE] Long leave pass created with ID: ${pass.id}, Coordinator ID: ${coordinatorId}`)
+      console.log(`[PASS SERVICE] Long leave created: ID=${pass.id}, Coordinator=${data.coordinator_id}, HostelStaff=${data.hostel_staff_id}`)
 
-      // Create coordinator approval record
       await approvalRepository.create({
         pass_id: pass.id,
         stage: 'COORDINATOR',
         status: 'PENDING'
       })
 
-      // Create hostel staff approval record
       await approvalRepository.create({
         pass_id: pass.id,
         stage: 'HOSTEL_STAFF',
@@ -212,5 +196,18 @@ export const passService = {
 
   getStudentPasses: async (studentId) => {
     return passRepository.findByStudentId(studentId)
+  },
+
+  deletePass: async (passId) => {
+    try {
+      console.log(`[PASS SERVICE] Deleting pass with ID: ${passId}`)
+      await approvalRepository.deleteByPassId(passId)
+      const result = await passRepository.delete(passId)
+      console.log(`[PASS SERVICE] Pass deleted successfully: ${passId}`)
+      return result
+    } catch (error) {
+      console.error(`[PASS SERVICE] Error deleting pass ${passId}:`, error.message)
+      throw new Error(`Failed to delete pass: ${error.message}`)
+    }
   }
 }

@@ -31,41 +31,76 @@ export const Dashboard = () => {
       setLoading(true)
       setError('')
 
-      // Get pending requests
-      const pendingResponse = await approvalAPI.getPendingRequests()
-      const pending = pendingResponse.data || []
+      // Get pending requests with error handling
+      let pending = []
+      try {
+        const pendingResponse = await approvalAPI.getPendingRequests()
+        pending = Array.isArray(pendingResponse?.data) ? pendingResponse.data : []
+      } catch (pendingError) {
+        console.warn('Failed to fetch pending requests:', pendingError)
+      }
 
-      // Get history
-      const historyResponse = await approvalAPI.getApprovalHistory()
-      const history = historyResponse.data || []
+      // Get history with error handling
+      let history = []
+      try {
+        const historyResponse = await approvalAPI.getApprovalHistory()
+        history = Array.isArray(historyResponse?.data) ? historyResponse.data : []
+      } catch (historyError) {
+        console.warn('Failed to fetch approval history:', historyError)
+      }
 
-      // Calculate statistics
+      // Calculate statistics with safe date handling
       const today = new Date()
       today.setHours(0, 0, 0, 0)
 
       const approvedToday = history.filter((item) => {
-        const approvedDate = new Date(item.approved_at)
-        approvedDate.setHours(0, 0, 0, 0)
-        return item.status === 'APPROVED' && approvedDate.getTime() === today.getTime()
+        try {
+          if (!item?.approved_at || item.status !== 'APPROVED') return false
+          const approvedDate = new Date(item.approved_at)
+          if (isNaN(approvedDate.getTime())) return false
+          approvedDate.setHours(0, 0, 0, 0)
+          return approvedDate.getTime() === today.getTime()
+        } catch (dateError) {
+          console.warn('Date parsing error:', dateError)
+          return false
+        }
       }).length
 
       const rejectedToday = history.filter((item) => {
-        const approvedDate = new Date(item.approved_at)
-        approvedDate.setHours(0, 0, 0, 0)
-        return item.status === 'REJECTED' && approvedDate.getTime() === today.getTime()
+        try {
+          if (!item?.approved_at || item.status !== 'REJECTED') return false
+          const approvedDate = new Date(item.approved_at)
+          if (isNaN(approvedDate.getTime())) return false
+          approvedDate.setHours(0, 0, 0, 0)
+          return approvedDate.getTime() === today.getTime()
+        } catch (dateError) {
+          console.warn('Date parsing error:', dateError)
+          return false
+        }
       }).length
 
+      // Set stats with safe defaults
       setStats({
-        pending: pending.length,
-        approvedToday,
-        rejectedToday,
-        totalProcessed: history.length
+        pending: pending.length || 0,
+        approvedToday: approvedToday || 0,
+        rejectedToday: rejectedToday || 0,
+        totalProcessed: history.length || 0
       })
 
-      // Get recent activity (last 5 from history)
-      setRecentActivity(history.slice(0, 5))
+      // Get recent activity (last 5 from history) with safe slicing
+      setRecentActivity(Array.isArray(history) ? history.slice(0, 5) : [])
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load dashboard data')
+      console.error('Dashboard data fetch error:', err)
+      setError(err.response?.data?.message || err.message || 'Failed to load dashboard data')
+      
+      // Set safe default stats on error
+      setStats({
+        pending: 0,
+        approvedToday: 0,
+        rejectedToday: 0,
+        totalProcessed: 0
+      })
+      setRecentActivity([])
     } finally {
       setLoading(false)
     }
@@ -111,54 +146,83 @@ export const Dashboard = () => {
       {/* Main Content */}
       <div className="px-6 py-8">
         <div className="max-w-7xl mx-auto">
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-700">{error}</p>
+          {/* Loading State */}
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading dashboard...</p>
+              </div>
             </div>
           )}
 
-          {/* Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <StatsCard
-              label="Pending Requests"
-              value={stats.pending}
-              icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-              color="blue"
-            />
-            <StatsCard
-              label="Approved Today"
-              value={approvedToday}
-              icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
-              color="green"
-            />
-            <StatsCard
-              label="Rejected Today"
-              value={stats.rejectedToday}
-              icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>}
-              color="red"
-            />
-            <StatsCard
-              label="Total Processed"
-              value={stats.totalProcessed}
-              icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-              color="purple"
-            />
-          </div>
+          {/* Error Message */}
+          {error && !loading && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <div>
+                  <p className="text-red-700 font-medium">Dashboard Error</p>
+                  <p className="text-red-600 text-sm">{error}</p>
+                </div>
+              </div>
+              <button
+                onClick={fetchDashboardData}
+                className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm"
+              >
+                Retry
+              </button>
+            </div>
+          )}
 
-          {/* Quick Actions */}
-          <div className="mb-8">
-            <QuickActionsPanel actions={quickActions} />
-          </div>
+          {/* Dashboard Content - Only show when not loading */}
+          {!loading && (
+            <>
+              {/* Statistics Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <StatsCard
+                  label="Pending Requests"
+                  value={stats?.pending ?? 0}
+                  icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                  color="blue"
+                />
+                <StatsCard
+                  label="Approved Today"
+                  value={stats?.approvedToday ?? 0}
+                  icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
+                  color="green"
+                />
+                <StatsCard
+                  label="Rejected Today"
+                  value={stats?.rejectedToday ?? 0}
+                  icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>}
+                  color="red"
+                />
+                <StatsCard
+                  label="Total Processed"
+                  value={stats?.totalProcessed ?? 0}
+                  icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                  color="purple"
+                />
+              </div>
 
-          {/* Recent Activity */}
-          <RecentActivityTable
-            title="Recent Requests"
-            columns={tableColumns}
-            data={recentActivity}
-            loading={loading}
-            empty="No recent activity"
-          />
+              {/* Quick Actions */}
+              <div className="mb-8">
+                <QuickActionsPanel actions={quickActions} />
+              </div>
+
+              {/* Recent Activity */}
+              <RecentActivityTable
+                title="Recent Requests"
+                columns={tableColumns}
+                data={recentActivity || []}
+                loading={false}
+                empty="No recent activity"
+              />
+            </>
+          )}
         </div>
       </div>
     </div>

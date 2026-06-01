@@ -30,4 +30,13 @@ router.get('/students', authorize('HOSTEL_STAFF'), hostelController.getStudents)
 // Get dashboard statistics
 router.get('/dashboard', authorize('HOSTEL_STAFF'), hostelController.getDashboard)
 
+// Get approved passes
+router.get('/approved', authorize('HOSTEL_STAFF'), hostelController.getApprovedPasses)
+
+// Get students currently outside
+router.get('/students-outside', authorize('HOSTEL_STAFF'), hostelController.getStudentsOutside)
+
+// Get today's overview statistics
+router.get('/today-overview', authorize('HOSTEL_STAFF'), hostelController.getTodayOverview)
+
 export default router

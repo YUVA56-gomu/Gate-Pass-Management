@@ -8,7 +8,7 @@ import { useAuth } from '../hooks/useAuth'
  * Uses Outlet to render nested routes in React Router v6
  */
 export const RoleRoute = ({ allowedRoles }) => {
-  const { hasRole, loading, isAuthenticated } = useAuth()
+  const { hasRole, loading, isAuthenticated, user } = useAuth()
 
   if (loading) {
     return (
@@ -26,7 +26,17 @@ export const RoleRoute = ({ allowedRoles }) => {
   }
 
   if (!hasRole(allowedRoles)) {
-    return <Navigate to="/" replace />
+    // Redirect to the correct dashboard based on actual role
+    const roleRedirects = {
+      STUDENT: '/student/dashboard',
+      COORDINATOR: '/coordinator/dashboard',
+      HOSTEL_STAFF: '/hostel/dashboard',
+      SECURITY: '/security/dashboard',
+      ADMIN: '/admin/dashboard',
+    }
+    const redirect = user?.role ? (roleRedirects[user.role] || '/login') : '/login'
+    console.warn(`[RoleRoute] Role mismatch. User role: ${user?.role}, allowed: ${allowedRoles}. Redirecting to ${redirect}`)
+    return <Navigate to={redirect} replace />
   }
 
   return <Outlet />

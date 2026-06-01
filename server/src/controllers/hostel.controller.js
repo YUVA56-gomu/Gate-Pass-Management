@@ -26,6 +26,12 @@ export const getPendingPasses = async (req, res) => {
  */
 export const approvePass = async (req, res) => {
   try {
+    console.log('[HOSTEL CONTROLLER] PUT approve', {
+      passId: req.params.id,
+      userId: req.user?.id,
+      role: req.user?.role
+    })
+
     // Only hostel staff can approve
     if (req.user.role !== 'HOSTEL_STAFF') {
       return sendError(res, 'Only hostel staff can approve passes', 403)
@@ -36,8 +42,10 @@ export const approvePass = async (req, res) => {
 
     const approval = await hostelService.approvePass(id, req.user.id, remarks)
 
+    console.log('[HOSTEL CONTROLLER] Approve success, passId:', id)
     return sendSuccess(res, approval, 'Pass approved successfully', 200)
   } catch (error) {
+    console.error('[HOSTEL CONTROLLER] Approve error:', error.message)
     return sendError(res, error.message, 400)
   }
 }
@@ -48,6 +56,12 @@ export const approvePass = async (req, res) => {
  */
 export const rejectPass = async (req, res) => {
   try {
+    console.log('[HOSTEL CONTROLLER] PUT reject', {
+      passId: req.params.id,
+      userId: req.user?.id,
+      role: req.user?.role
+    })
+
     // Only hostel staff can reject
     if (req.user.role !== 'HOSTEL_STAFF') {
       return sendError(res, 'Only hostel staff can reject passes', 403)
@@ -63,8 +77,10 @@ export const rejectPass = async (req, res) => {
 
     const approval = await hostelService.rejectPass(id, req.user.id, remarks)
 
+    console.log('[HOSTEL CONTROLLER] Reject success, passId:', id)
     return sendSuccess(res, approval, 'Pass rejected successfully', 200)
   } catch (error) {
+    console.error('[HOSTEL CONTROLLER] Reject error:', error.message)
     return sendError(res, error.message, 400)
   }
 }
@@ -139,13 +155,70 @@ export const getDashboard = async (req, res) => {
   }
 }
 
+/**
+ * Get approved passes
+ * GET /hostel/approved
+ */
+export const getApprovedPasses = async (req, res) => {
+  try {
+    if (req.user.role !== 'HOSTEL_STAFF') {
+      return sendError(res, 'Only hostel staff can view approved passes', 403)
+    }
+
+    const passes = await hostelService.getApprovedPasses()
+
+    return sendSuccess(res, passes, 'Approved passes retrieved successfully', 200)
+  } catch (error) {
+    return sendError(res, error.message, 400)
+  }
+}
+
+/**
+ * Get students currently outside
+ * GET /hostel/students-outside
+ */
+export const getStudentsOutside = async (req, res) => {
+  try {
+    if (req.user.role !== 'HOSTEL_STAFF') {
+      return sendError(res, 'Only hostel staff can view students outside', 403)
+    }
+
+    const students = await hostelService.getStudentsOutside()
+
+    return sendSuccess(res, students, 'Students outside retrieved successfully', 200)
+  } catch (error) {
+    return sendError(res, error.message, 400)
+  }
+}
+
+/**
+ * Get today's overview statistics
+ * GET /hostel/today-overview
+ */
+export const getTodayOverview = async (req, res) => {
+  try {
+    if (req.user.role !== 'HOSTEL_STAFF') {
+      return sendError(res, 'Only hostel staff can view today\'s overview', 403)
+    }
+
+    const overview = await hostelService.getTodayOverview()
+
+    return sendSuccess(res, overview, 'Today\'s overview retrieved successfully', 200)
+  } catch (error) {
+    return sendError(res, error.message, 400)
+  }
+}
+
 export const hostelController = {
   getPendingPasses,
   approvePass,
   rejectPass,
   getAllPasses,
   getStudents,
-  getDashboard
+  getDashboard,
+  getApprovedPasses,
+  getStudentsOutside,
+  getTodayOverview
 }
 
 export default hostelController
