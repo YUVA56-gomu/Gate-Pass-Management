@@ -18,6 +18,7 @@ export function Login() {
   const [loading, setLoading] = useState(false)
   const [apiError, setApiError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [shake, setShake] = useState(false)
 
   useEffect(() => {
     if (isAuthenticated() && user) {
@@ -51,10 +52,20 @@ export function Login() {
       if (result.success) {
         navigate(ROLE_ROUTES[result.user.role] || '/student')
       } else {
-        setApiError(result.error || 'Login failed. Check your credentials.')
+        const msg = result.error || 'Login failed. Check your credentials.'
+        setApiError(msg)
+        // Shake the form to draw attention to the error
+        setShake(true)
+        setTimeout(() => setShake(false), 600)
+        // Highlight both fields on credential error
+        if (/invalid|incorrect|wrong|not found|password|email/i.test(msg)) {
+          setErrors({ email: ' ', password: ' ' })
+        }
       }
     } catch {
       setApiError('An error occurred. Please try again.')
+      setShake(true)
+      setTimeout(() => setShake(false), 600)
     } finally {
       setLoading(false)
     }
@@ -133,11 +144,25 @@ export function Login() {
 
           {/* API Error */}
           {apiError && (
-            <div className="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 animate-fade-in">
-              <svg className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-              <p className="text-red-700 text-sm">{apiError}</p>
+            <div className={`mb-5 p-4 rounded-xl bg-red-50 border-2 border-red-300 flex items-start gap-3 ${shake ? 'animate-shake' : 'animate-fade-in'}`}>
+              <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-red-800 font-semibold text-sm">Invalid credentials</p>
+                <p className="text-red-600 text-xs mt-0.5">{apiError}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setApiError(''); setErrors({}) }}
+                className="text-red-400 hover:text-red-600 transition-colors flex-shrink-0"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           )}
 
@@ -153,10 +178,10 @@ export function Login() {
                 value={formData.email} onChange={handleChange}
                 disabled={loading}
                 placeholder="you@example.com"
-                className={`input-field ${errors.email ? 'border-red-400 bg-red-50' : ''}`}
+                className={`input-field ${errors.email ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-red-200' : ''}`}
                 autoComplete="email"
               />
-              {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
+              {errors.email && errors.email.trim() && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
             </div>
 
             {/* Password */}
@@ -171,7 +196,7 @@ export function Login() {
                   value={formData.password} onChange={handleChange}
                   disabled={loading}
                   placeholder="••••••••"
-                  className={`input-field pr-10 ${errors.password ? 'border-red-400 bg-red-50' : ''}`}
+                  className={`input-field pr-10 ${errors.password ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-red-200' : ''}`}
                   autoComplete="current-password"
                 />
                 <button
@@ -191,7 +216,7 @@ export function Login() {
                   )}
                 </button>
               </div>
-              {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
+              {errors.password && errors.password.trim() && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
             </div>
 
             {/* Submit */}

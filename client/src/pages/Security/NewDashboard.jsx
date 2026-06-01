@@ -560,3 +560,60 @@ const NewDashboard = () => {
         </div>
       </main>
 
+      {/* Pass Modal */}
+      {showPassModal && scannedPass && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Pass Verified</h3>
+              <button onClick={() => setShowPassModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-3 mb-6">
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <p className="text-sm font-semibold text-green-800">✓ Valid Gate Pass</p>
+              </div>
+              {scannedPass.studentDetails && (
+                <div>
+                  <p className="text-sm font-semibold text-gray-700">Student: {scannedPass.studentDetails.name}</p>
+                  <p className="text-xs text-gray-500">USN: {scannedPass.studentDetails.usn}</p>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button onClick={handleDenyEntry} className="flex-1 py-2 border border-red-200 text-red-700 rounded-lg font-semibold text-sm hover:bg-red-50 transition">
+                Deny
+              </button>
+              <button onClick={handleAllowEntry} className="flex-1 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 transition">
+                Allow Entry
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Logout Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Sign Out</h3>
+            <p className="text-sm text-gray-600 mb-6">Are you sure you want to sign out?</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowLogoutModal(false)} className="flex-1 py-2 border border-gray-200 text-gray-700 rounded-lg font-semibold text-sm hover:bg-gray-50 transition">
+                Cancel
+              </button>
+              <button onClick={confirmLogout} className="flex-1 py-2 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700 transition">
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default NewDashboard
