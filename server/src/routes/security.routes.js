@@ -28,6 +28,12 @@ router.get('/logs/today', authenticate, isSecurity, securityController.getTodayL
 router.get('/logs', authenticate, isSecurity, securityController.getAllLogs)
 
 /**
+ * GET /security/outside
+ * Get all students currently outside campus
+ */
+router.get('/outside', authenticate, isSecurity, securityController.getStudentsOutside)
+
+/**
  * GET /security/dashboard
  * Get dashboard statistics
  */

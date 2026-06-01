@@ -3,6 +3,7 @@ import axios from './axios'
 /**
  * Scan QR Token
  * POST /security/scan
+ * Accepts raw token string OR JSON-wrapped token from hardware scanner
  */
 export const scanQRToken = async (token) => {
   try {
@@ -22,22 +23,35 @@ export const getTodayLogs = async () => {
     const response = await axios.get('/security/logs/today')
     return response.data
   } catch (error) {
-    throw error.response?.data || { success: false, message: 'Failed to get today\'s logs' }
+    throw error.response?.data || { success: false, message: "Failed to get today's logs" }
   }
 }
 
 /**
  * Get All Logs with Filters
- * GET /security/logs?filter=ALL|OUT|IN|TODAY
+ * GET /security/logs?filter=ALL|OUT|IN|TODAY|YESTERDAY|THIS_WEEK&search=
  */
-export const getAllLogs = async (filter = 'ALL') => {
+export const getAllLogs = async (filter = 'ALL', search = '') => {
   try {
     const response = await axios.get('/security/logs', {
-      params: { filter }
+      params: { filter, search }
     })
     return response.data
   } catch (error) {
     throw error.response?.data || { success: false, message: 'Failed to get logs' }
+  }
+}
+
+/**
+ * Get Students Currently Outside Campus
+ * GET /security/outside
+ */
+export const getStudentsOutside = async () => {
+  try {
+    const response = await axios.get('/security/outside')
+    return response.data
+  } catch (error) {
+    throw error.response?.data || { success: false, message: 'Failed to get students outside' }
   }
 }
 
@@ -58,5 +72,6 @@ export default {
   scanQRToken,
   getTodayLogs,
   getAllLogs,
+  getStudentsOutside,
   getDashboardStats
 }

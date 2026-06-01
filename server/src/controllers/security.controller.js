@@ -2,6 +2,19 @@ import { sendSuccess, sendError } from '../utils/response.js'
 import * as securityService from '../services/security.service.js'
 
 /**
+ * Get Students Currently Outside
+ * GET /security/outside
+ */
+export const getStudentsOutside = async (req, res) => {
+  try {
+    const students = await securityService.getStudentsOutside()
+    return sendSuccess(res, students, 'Students outside retrieved successfully', 200)
+  } catch (error) {
+    return sendError(res, error.message, 400)
+  }
+}
+
+/**
  * Scan QR Token
  * POST /security/scan
  */
