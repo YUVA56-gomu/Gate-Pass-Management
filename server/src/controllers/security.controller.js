@@ -60,12 +60,13 @@ export const getAllLogs = async (req, res) => {
     const { filter = 'ALL' } = req.query
 
     // Validation: Valid filter
-    const validFilters = ['ALL', 'OUT', 'IN', 'TODAY']
+    const validFilters = ['ALL', 'OUT', 'IN', 'TODAY', 'YESTERDAY', 'THIS_WEEK']
     if (!validFilters.includes(filter)) {
-      return sendError(res, 'Invalid filter. Use: ALL, OUT, IN, or TODAY', 400)
+      return sendError(res, 'Invalid filter. Use: ALL, OUT, IN, TODAY, YESTERDAY, or THIS_WEEK', 400)
     }
 
-    const logs = await securityService.getAllLogs(filter)
+    const { search = '' } = req.query
+    const logs = await securityService.getAllLogs(filter, search)
 
     return sendSuccess(res, logs, 'Logs retrieved successfully', 200)
   } catch (error) {

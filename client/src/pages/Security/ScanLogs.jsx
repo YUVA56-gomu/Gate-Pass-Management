@@ -29,6 +29,31 @@ export function ScanLogs() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  const downloadCSV = () => {
+    if (filtered.length === 0) return
+    const headers = ['Student', 'USN', 'Department', 'Pass Type', 'Action', 'Timestamp', 'Guard', 'Status']
+    const rows = filtered.map(log => [
+      log.studentName || '',
+      log.studentUSN  || '',
+      log.department  || '',
+      log.passType === 'LONG_LEAVE' ? 'Long Leave' : log.passType === 'DAILY' ? 'Daily' : (log.passType || ''),
+      log.action      || '',
+      fmtDT(log.scannedAt),
+      log.scannedBy   || '',
+      log.scanStatus  || 'VALID'
+    ])
+    const csv = [headers, ...rows]
+      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `scan-logs-${filter.toLowerCase()}-${new Date().toISOString().slice(0,10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const fetchLogs = useCallback(async () => {
     try {
       setLoading(true); setError(null)
@@ -58,13 +83,22 @@ export function ScanLogs() {
         title="Scan Logs"
         subtitle="All gate entry and exit records"
         actions={
-          <button onClick={fetchLogs}
-            className="btn-secondary text-sm py-2 flex items-center gap-1.5">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={downloadCSV} disabled={filtered.length === 0}
+              className="btn-secondary text-sm py-2 flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download CSV
+            </button>
+            <button onClick={fetchLogs}
+              className="btn-secondary text-sm py-2 flex items-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
+            </button>
+          </div>
         }
       />
 
