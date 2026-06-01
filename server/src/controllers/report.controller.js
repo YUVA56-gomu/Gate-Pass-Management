@@ -100,22 +100,47 @@ export const exportCSV = async (req, res) => {
   try {
     const { type } = req.query
 
-    // Validation: Type provided
     if (!type) {
       return sendError(res, 'Report type is required', 400)
     }
 
-    // Validation: Valid type
-    const validTypes = ['overall', 'departments', 'monthly', 'passTypes', 'coordinators', 'hostelStaff']
+    const validTypes = [
+      'overview',
+      'departments',
+      'monthly',
+      'pass-types',
+      'security',
+      'coordinators',
+      'hostel-staff'
+    ]
+
     if (!validTypes.includes(type)) {
       return sendError(res, 'Invalid report type', 400)
     }
 
-    const csvContent = await reportService.exportDataAsCSV(type)
+    // map frontend type -> service type
+    const typeMap = {
+      overview: 'overall',
+      departments: 'departments',
+      monthly: 'monthly',
+      'pass-types': 'passTypes',
+      security: 'security',
+      coordinators: 'coordinators',
+      'hostel-staff': 'hostelStaff'
+    }
 
-    // Set response headers for CSV download
+    const csvContent = await reportService.exportDataAsCSV(
+      typeMap[type]
+    )
+
     res.setHeader('Content-Type', 'text/csv')
-    res.setHeader('Content-Disposition', `attachment; filename="report-${type}-${new Date().toISOString().split('T')[0]}.csv"`)
+
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="report-${type}-${new Date()
+        .toISOString()
+        .split('T')[0]}.csv"`
+    )
 
     return res.send(csvContent)
   } catch (error) {
@@ -131,21 +156,45 @@ export const exportPDF = async (req, res) => {
   try {
     const { type } = req.query
 
-    // Validation: Type provided
     if (!type) {
       return sendError(res, 'Report type is required', 400)
     }
 
-    // Validation: Valid type
-    const validTypes = ['overall', 'departments', 'monthly', 'passTypes', 'security', 'coordinators', 'hostelStaff']
+    const validTypes = [
+      'overview',
+      'departments',
+      'monthly',
+      'pass-types',
+      'security',
+      'coordinators',
+      'hostel-staff'
+    ]
+
     if (!validTypes.includes(type)) {
       return sendError(res, 'Invalid report type', 400)
     }
 
-    const pdfData = await reportService.exportDataAsPDF(type)
+    // map frontend type -> service type
+    const typeMap = {
+      overview: 'overall',
+      departments: 'departments',
+      monthly: 'monthly',
+      'pass-types': 'passTypes',
+      security: 'security',
+      coordinators: 'coordinators',
+      'hostel-staff': 'hostelStaff'
+    }
 
-    // Return data for PDF generation (actual PDF generation can be done on frontend or with pdfkit)
-    return sendSuccess(res, pdfData, 'PDF data prepared successfully', 200)
+    const pdfData = await reportService.exportDataAsPDF(
+      typeMap[type]
+    )
+
+    return sendSuccess(
+      res,
+      pdfData,
+      'PDF data prepared successfully',
+      200
+    )
   } catch (error) {
     return sendError(res, error.message, 400)
   }

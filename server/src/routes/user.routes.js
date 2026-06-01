@@ -8,9 +8,9 @@ router.use(authMiddleware)
 
 router.get('/profile', userController.getProfile)
 router.put('/profile', userController.updateProfile)
-router.get('/', roleMiddleware(['admin']), userController.getAllUsers)
-router.post('/', roleMiddleware(['admin']), userController.createUser)
-router.put('/:id', roleMiddleware(['admin']), userController.updateUser)
-router.delete('/:id', roleMiddleware(['admin']), userController.deleteUser)
+router.get('/', roleMiddleware(['ADMIN']), userController.getAllUsers)
+router.post('/', roleMiddleware(['ADMIN']), userController.createUser)
+router.put('/:id', roleMiddleware(['ADMIN']), userController.updateUser)
+router.delete('/:id', roleMiddleware(['ADMIN']), userController.deleteUser)
 
 export default router
